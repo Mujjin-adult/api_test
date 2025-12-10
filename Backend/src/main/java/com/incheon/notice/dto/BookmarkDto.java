@@ -1,6 +1,5 @@
 package com.incheon.notice.dto;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -21,7 +20,8 @@ public class BookmarkDto {
     public static class Response {
 
         private Long id;
-        private Long noticeId;
+        private NoticeDto.Response notice;  // 북마크된 공지사항 정보
+        private String memo;
         private LocalDateTime createdAt;
     }
 
@@ -34,7 +34,19 @@ public class BookmarkDto {
     @AllArgsConstructor
     public static class CreateRequest {
 
-        @NotNull(message = "공지사항 ID는 필수입니다")
         private Long noticeId;
+        private String memo;  // 선택사항
+    }
+
+    /**
+     * 북마크 메모 수정 요청 DTO
+     */
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UpdateRequest {
+
+        private String memo;
     }
 }

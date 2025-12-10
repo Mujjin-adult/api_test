@@ -5,13 +5,13 @@ import { getMessaging, getToken } from "firebase/messaging";
 
 // Your web app's Firebase configuration (daon-47f9c - Backend 프로젝트와 동일)
 const firebaseConfig = {
-  apiKey: "AIzaSyAmhyE1WLIbEay0tE_A9oLk8NxC5mYlwHM",
-  authDomain: "daon-47f9c.firebaseapp.com",
-  projectId: "daon-47f9c",
-  storageBucket: "daon-47f9c.firebasestorage.app",
-  messagingSenderId: "855429318712",
-  appId: "1:855429318712:web:00b2527c03f41289433ecd",
-  measurementId: "G-XPVFWXP6T2",
+  apiKey: "AIzaSyCk0ypuopTg4nBdjZeq6xn6p0zj91SRHFQ",
+  authDomain: "ttringincampus.firebaseapp.com",
+  projectId: "ttringincampus",
+  storageBucket: "ttringincampus.firebasestorage.app",
+  messagingSenderId: "739614253674",
+  appId: "1:739614253674:web:0dce0aac5b5ac648716013",
+  measurementId: "G-X2M3S8W5Z7",
 };
 
 // Initialize Firebase
