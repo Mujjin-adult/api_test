@@ -20,7 +20,6 @@ import { TokenService } from "../../services/tokenService";
 type RootStackParamList = {
   Login: undefined;
   EnterEmail: undefined;
-  EmailVerification: { email: string };
   Home: undefined;
   Detail: undefined;
   Search: undefined;
@@ -111,29 +110,10 @@ export default function LoginMain() {
     setIsLoading(true);
 
     try {
-      // 1. Firebase 인증 (이메일 인증 확인)
-      const firebaseResult = await signInWithEmail(email, password, false);
+      // 1. Firebase 인증
+      const firebaseResult = await signInWithEmail(email, password);
 
       if (!firebaseResult.success) {
-        // 이메일 인증이 필요한 경우
-        if (firebaseResult.emailVerified === false) {
-          Alert.alert(
-            "이메일 인증 필요",
-            "이메일 인증이 필요합니다. 인증 메일을 확인해주세요.",
-            [
-              {
-                text: "인증하기",
-                onPress: () => {
-                  navigation.navigate("EmailVerification", { email });
-                },
-              },
-              { text: "취소", style: "cancel" },
-            ]
-          );
-          setIsLoading(false);
-          return;
-        }
-
         Alert.alert("로그인 실패", firebaseResult.message);
         setIsLoading(false);
         return;

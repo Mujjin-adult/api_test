@@ -1,7 +1,5 @@
 import {
   createUserWithEmailAndPassword,
-  sendEmailVerification,
-  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
@@ -10,7 +8,7 @@ import {
 import { auth } from "../config/firebaseConfig";
 
 /**
- * 이메일/비밀번호로 회원가입 및 인증 이메일 발송
+ * 이메일/비밀번호로 회원가입
  * @param email - 이메일 주소
  * @param password - 비밀번호
  * @param displayName - 사용자 이름 (선택)
@@ -35,18 +33,15 @@ export const signUpWithEmail = async (
       await updateProfile(user, { displayName });
     }
 
-    // 이메일 인증 링크 발송
-    await sendEmailVerification(user);
-    console.log("✅ 이메일 인증 메일 발송 완료:", user.email);
+    console.log("✅ Firebase 회원가입 완료:", user.email);
 
     return {
       success: true,
-      message: "회원가입이 완료되었습니다. 이메일을 확인해주세요.",
+      message: "회원가입이 완료되었습니다.",
       user: {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName,
-        emailVerified: user.emailVerified,
       },
     };
   } catch (error: any) {
@@ -82,13 +77,11 @@ export const signUpWithEmail = async (
  * 이메일/비밀번호로 로그인
  * @param email - 이메일 주소
  * @param password - 비밀번호
- * @param skipEmailVerification - true: 이메일 인증 건너뛰기, false: 이메일 인증 필수 (기본값)
  * @returns 성공 여부 및 사용자 정보
  */
 export const signInWithEmail = async (
   email: string,
-  password: string,
-  skipEmailVerification: boolean = false
+  password: string
 ) => {
   try {
     const userCredential = await signInWithEmailAndPassword(
@@ -98,32 +91,15 @@ export const signInWithEmail = async (
     );
     const user = userCredential.user;
 
-    // 이메일 인증 확인 (skipEmailVerification이 false일 때 확인)
-    if (!skipEmailVerification && !user.emailVerified) {
-      // 인증 이메일 재발송
-      await sendEmailVerification(user);
-      console.log("✅ 이메일 인증 메일 재발송 완료:", user.email);
-      return {
-        success: false,
-        message:
-          "이메일 인증이 필요합니다. 새로운 인증 메일을 발송했으니 확인해주세요.",
-        emailVerified: false,
-        user: {
-          uid: user.uid,
-          email: user.email,
-        },
-      };
-    }
+    console.log("✅ Firebase 로그인 성공:", user.email);
 
     return {
       success: true,
       message: "로그인되었습니다.",
-      emailVerified: user.emailVerified,
       user: {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName,
-        emailVerified: user.emailVerified,
       },
     };
   } catch (error: any) {
@@ -144,62 +120,6 @@ export const signInWithEmail = async (
       case "auth/too-many-requests":
         errorMessage =
           "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.";
-        break;
-    }
-
-    return {
-      success: false,
-      message: errorMessage,
-      error: error.code,
-    };
-  }
-};
-
-/**
- * 인증 이메일 재발송
- * @param user - Firebase User 객체
- * @returns 성공 여부
- */
-export const resendVerificationEmail = async (user: User) => {
-  try {
-    await sendEmailVerification(user);
-    return {
-      success: true,
-      message: "인증 이메일이 재발송되었습니다.",
-    };
-  } catch (error: any) {
-    console.error("인증 이메일 재발송 오류:", error);
-    return {
-      success: false,
-      message: "인증 이메일 발송에 실패했습니다.",
-      error: error.code,
-    };
-  }
-};
-
-/**
- * 비밀번호 재설정 이메일 발송
- * @param email - 이메일 주소
- * @returns 성공 여부
- */
-export const resetPassword = async (email: string) => {
-  try {
-    await sendPasswordResetEmail(auth, email);
-    return {
-      success: true,
-      message: "비밀번호 재설정 이메일이 발송되었습니다.",
-    };
-  } catch (error: any) {
-    console.error("비밀번호 재설정 오류:", error);
-
-    let errorMessage = "비밀번호 재설정에 실패했습니다.";
-
-    switch (error.code) {
-      case "auth/user-not-found":
-        errorMessage = "등록되지 않은 이메일입니다.";
-        break;
-      case "auth/invalid-email":
-        errorMessage = "유효하지 않은 이메일 형식입니다.";
         break;
     }
 

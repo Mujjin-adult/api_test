@@ -12,13 +12,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { registerUserToBackend } from "../../services/authAPI";
+import { registerUserToBackend, signUpWithEmail } from "../../services/authAPI";
 
 type RootStackParamList = {
   Login: undefined;
   EnterEmail: undefined;
   EnterPw: { email: string; name: string; studentId: string };
-  EmailVerification: { email: string };
   Home: undefined;
   Detail: undefined;
   Search: undefined;
@@ -109,8 +108,19 @@ export default function EnterPw() {
     setIsLoading(true);
 
     try {
-      // Backend API 호출 - Firebase + DB 모두 처리
-      const result = await registerUserToBackend(
+      // 1. Firebase 회원가입
+      const firebaseResult = await signUpWithEmail(email, password, name);
+
+      if (!firebaseResult.success) {
+        Alert.alert("회원가입 실패", firebaseResult.message || "회원가입에 실패했습니다.");
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("Firebase 회원가입 성공:", firebaseResult.user);
+
+      // 2. Backend API 호출 - DB에 사용자 정보 저장
+      const backendResult = await registerUserToBackend(
         name,
         studentId,
         email,
@@ -118,13 +128,13 @@ export default function EnterPw() {
         "미지정" // department - 추후 입력 가능
       );
 
-      if (!result.success) {
-        Alert.alert("회원가입 실패", result.message || "회원가입에 실패했습니다.");
-        setIsLoading(false);
-        return;
+      if (!backendResult.success) {
+        console.warn("Backend 회원가입 실패 (Firebase는 성공):", backendResult.message);
+        // Backend 실패해도 Firebase 회원가입은 성공했으므로 계속 진행
+      } else {
+        console.log("Backend 회원가입 성공:", backendResult.data);
       }
 
-      console.log("회원가입 성공:", result.data);
       Alert.alert(
         "회원가입 완료",
         "회원가입이 완료되었습니다. 로그인해주세요.",
