@@ -135,16 +135,8 @@ export default function EnterPw() {
         console.log("Backend 회원가입 성공:", backendResult.data);
       }
 
-      Alert.alert(
-        "회원가입 완료",
-        "회원가입이 완료되었습니다. 로그인해주세요.",
-        [
-          {
-            text: "확인",
-            onPress: () => navigation.navigate("Login"),
-          },
-        ]
-      );
+      // 회원가입 완료 후 로그인 페이지로 자동 이동
+      navigation.navigate("Login");
     } catch (error) {
       console.error("회원가입 오류:", error);
       Alert.alert("오류", "회원가입 중 오류가 발생했습니다.");
