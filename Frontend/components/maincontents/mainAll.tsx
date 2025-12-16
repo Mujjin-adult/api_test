@@ -387,7 +387,7 @@ export default function MainContents({ category, onCategoriesExtracted }: MainCo
                                 >
                                   {new Date(notice.publishedAt || notice.date || new Date()).toLocaleDateString("ko-KR")}
                                 </Text>
-                                {(notice.categoryCode || notice.category) && (
+                                {notice.detailCategory && (
                                   <Text
                                     style={{
                                       fontFamily: "Pretendard-Light",
@@ -402,10 +402,10 @@ export default function MainContents({ category, onCategoriesExtracted }: MainCo
                                       backgroundColor: "#8e8e8e",
                                     }}
                                   >
-                                    {notice.categoryCode || notice.category}
+                                    {notice.detailCategory}
                                   </Text>
                                 )}
-                                {notice.viewCount !== undefined && (
+                                {(notice.hits !== undefined || notice.viewCount !== undefined) && (
                                   <Text
                                     style={{
                                       fontFamily: "Pretendard-Light",
@@ -414,7 +414,7 @@ export default function MainContents({ category, onCategoriesExtracted }: MainCo
                                       marginLeft: 8,
                                     }}
                                   >
-                                    조회 {notice.viewCount}
+                                    조회 {notice.hits ?? notice.viewCount}
                                   </Text>
                                 )}
                               </View>

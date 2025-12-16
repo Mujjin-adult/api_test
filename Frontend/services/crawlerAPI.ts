@@ -45,10 +45,12 @@ export interface Notice {
   externalId?: string;
   categoryCode?: string; // 카테고리 코드
   category?: string; // 카테고리명 (호환성 유지)
+  detailCategory?: string; // 세부 카테고리 (태그)
   author?: string; // 작성자
   publishedAt: string; // 발행일 (ISO 8601)
   date?: string; // 호환성 유지
-  viewCount: number;
+  viewCount?: number; // 조회수 (호환성 유지)
+  hits?: number; // 조회수 (백엔드 응답)
   isImportant?: boolean; // 중요 공지 여부
   attachments?: string; // 첨부파일
   source?: string; // 출처
