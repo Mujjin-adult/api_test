@@ -1,4 +1,4 @@
-import { useRoute } from "@react-navigation/native";
+import { useRoute, useNavigation } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Linking, Platform, ScrollView, Share, Text, TouchableOpacity, View } from "react-native";
 import { Notice, getNoticeDetail } from "../../services/crawlerAPI";
@@ -12,12 +12,13 @@ if (Platform.OS !== "web") {
 
 export default function Detail() {
   const route = useRoute();
+  const navigation = useNavigation();
   const params = route.params as { notice?: Notice } | undefined;
 
   const { isBookmarked, toggleBookmark } = useBookmark();
   const [notice, setNotice] = useState<Notice | null>(params?.notice || null);
   const [isLoading, setIsLoading] = useState(false);
-  const [showWebView, setShowWebView] = useState(false);
+  const [showWebView, setShowWebView] = useState(true); // 기본값을 true로 변경하여 바로 웹뷰 표시
   const [webViewLoading, setWebViewLoading] = useState(true);
 
   // 공지사항 상세 정보 불러오기 (API 사용)
@@ -157,7 +158,7 @@ export default function Detail() {
             backgroundColor: "#fff",
           }}
         >
-          <TouchableOpacity onPress={() => setShowWebView(false)}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text
               style={{
                 fontFamily: "Pretendard-Bold",
