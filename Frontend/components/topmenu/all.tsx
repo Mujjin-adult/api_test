@@ -7,6 +7,30 @@ interface AllProps {
   availableCategories?: string[]; // 실제 존재하는 카테고리 목록
 }
 
+// 카테고리 코드와 한글 이름 매핑
+const CATEGORY_MAP: { [code: string]: string } = {
+  degree: "학사",
+  academic_credit: "학점교류",
+  general_events: "일반/행사/모집",
+  scholarship: "장학금",
+  tuition_payment: "등록금 납부",
+  educational_test: "교육시험",
+  volunteer: "봉사",
+  job: "채용정보",
+};
+
+// 카테고리 코드 목록 (순서 유지)
+const CATEGORY_CODES = [
+  "degree",
+  "academic_credit",
+  "general_events",
+  "scholarship",
+  "tuition_payment",
+  "educational_test",
+  "volunteer",
+  "job",
+];
+
 export default function All({ onCategoryChange, availableCategories }: AllProps) {
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
@@ -16,34 +40,16 @@ export default function All({ onCategoryChange, availableCategories }: AllProps)
     "Pretendard-Regular": require("../../assets/fonts/Pretendard-Regular.ttf"),
   });
 
-  // 기본 카테고리 목록
-  const defaultCategories = [
-    "학사",
-    "학점교류",
-    "일반/행사/모집",
-    "장학금",
-    "등록금 납부",
-    "교육시험",
-    "봉사",
-    "채용정보",
-  ];
+  const [selected, setSelected] = useState(CATEGORY_CODES[0]);
 
-  // 항상 기본 카테고리를 표시 (API에서 추가 카테고리가 있으면 병합)
-  const categories = defaultCategories;
-
-  const [selected, setSelected] = useState(categories[0]);
-
-  // 카테고리 목록이 변경되면 첫 번째 카테고리 선택
+  // 컴포넌트 마운트 시 첫 번째 카테고리 선택
   useEffect(() => {
-    if (categories.length > 0 && !categories.includes(selected)) {
-      setSelected(categories[0]);
-      onCategoryChange?.(categories[0]);
-    }
-  }, [categories]);
+    onCategoryChange?.(CATEGORY_CODES[0]);
+  }, []);
 
-  const handleCategoryPress = (category: string) => {
-    setSelected(category);
-    onCategoryChange?.(category);
+  const handleCategoryPress = (categoryCode: string) => {
+    setSelected(categoryCode);
+    onCategoryChange?.(categoryCode);
   };
 
   if (!fontsLoaded) return null;
@@ -76,30 +82,30 @@ export default function All({ onCategoryChange, availableCategories }: AllProps)
               height: 50, // 내부 row
             }}
           >
-            {categories.map((category) => (
+            {CATEGORY_CODES.map((code) => (
               <TouchableOpacity
-                key={category}
-                onPress={() => handleCategoryPress(category)}
+                key={code}
+                onPress={() => handleCategoryPress(code)}
               >
                 <View
                   style={{
                     paddingHorizontal: 20,
                     paddingVertical: 12,
-                    borderBottomWidth: selected === category ? 4 : 0,
+                    borderBottomWidth: selected === code ? 4 : 0,
                     borderBottomColor: "#bababa",
                   }}
                 >
                   <Text
                     style={{
                       fontFamily:
-                        selected === category
+                        selected === code
                           ? "Pretendard-Bold"
                           : "Pretendard-Light",
-                      color: selected === category ? "black" : "#555",
+                      color: selected === code ? "black" : "#555",
                       fontSize: 15,
                     }}
                   >
-                    {category}
+                    {CATEGORY_MAP[code]}
                   </Text>
                 </View>
               </TouchableOpacity>

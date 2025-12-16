@@ -28,7 +28,7 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const [activeTab, setActiveTab] = useState<number>(0); // 0: 공지사항, 1: 관심공지
-  const [selectedCategory, setSelectedCategory] = useState<string>("학사"); // 선택된 카테고리
+  const [selectedCategory, setSelectedCategory] = useState<string>("degree"); // 선택된 카테고리
   const [availableCategories, setAvailableCategories] = useState<string[]>([]); // 실제 존재하는 카테고리
   const [isAlertOpen, setIsAlertOpen] = useState(false); // 알림 모달 상태
 
