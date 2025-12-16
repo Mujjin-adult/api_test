@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -10,7 +10,32 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Notice, searchNotices } from "../../services/crawlerAPI";
+
+// 최근 검색어 타입
+interface RecentSearch {
+  keyword: string;
+  date: string; // YYYY-MM-DD
+}
+
+// 날짜 문자열을 파싱하는 헬퍼 함수 (YYYY.MM.DD, YYYY-MM-DD, ISO 형식 지원)
+const parseDate = (dateStr: string | undefined | null): Date => {
+  if (!dateStr) return new Date();
+
+  // YYYY.MM.DD 형식 처리
+  if (dateStr.match(/^\d{4}\.\d{2}\.\d{2}$/)) {
+    const [year, month, day] = dateStr.split('.').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  // 기타 형식은 Date 생성자로 파싱
+  const parsed = new Date(dateStr);
+  return isNaN(parsed.getTime()) ? new Date() : parsed;
+};
+
+const RECENT_SEARCH_KEY = "recentSearches";
+const MAX_RECENT_SEARCHES = 5;
 
 export default function Search() {
   const navigation = useNavigation();
@@ -26,17 +51,78 @@ export default function Search() {
   const [searchResults, setSearchResults] = useState<Notice[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
 
-  const handleSearch = async () => {
-    if (!searchText.trim()) {
+  // 앱 시작 시 최근 검색어 불러오기
+  useEffect(() => {
+    loadRecentSearches();
+  }, []);
+
+  // 최근 검색어 불러오기
+  const loadRecentSearches = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(RECENT_SEARCH_KEY);
+      if (stored) {
+        setRecentSearches(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error("최근 검색어 불러오기 오류:", error);
+    }
+  };
+
+  // 최근 검색어 저장하기
+  const saveRecentSearch = async (keyword: string) => {
+    try {
+      // 로컬 시간 기준으로 YYYY-MM-DD 형식 생성
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const today = `${year}-${month}-${day}`;
+      const newSearch: RecentSearch = { keyword, date: today };
+
+      // 기존 검색어 중 같은 키워드 제거 후 맨 앞에 추가
+      const filtered = recentSearches.filter((item) => item.keyword !== keyword);
+      const updated = [newSearch, ...filtered].slice(0, MAX_RECENT_SEARCHES);
+
+      setRecentSearches(updated);
+      await AsyncStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(updated));
+    } catch (error) {
+      console.error("최근 검색어 저장 오류:", error);
+    }
+  };
+
+  // 최근 검색어 삭제
+  const deleteRecentSearch = async (keyword: string) => {
+    try {
+      const updated = recentSearches.filter((item) => item.keyword !== keyword);
+      setRecentSearches(updated);
+      await AsyncStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(updated));
+    } catch (error) {
+      console.error("최근 검색어 삭제 오류:", error);
+    }
+  };
+
+  // 최근 검색어 클릭 시 검색 실행
+  const handleRecentSearchPress = (keyword: string) => {
+    setSearchText(keyword);
+    performSearch(keyword);
+  };
+
+  // 검색 실행
+  const performSearch = async (keyword: string) => {
+    if (!keyword.trim()) {
       return;
     }
 
     setIsSearching(true);
     setHasSearched(true);
 
+    // 최근 검색어 저장
+    await saveRecentSearch(keyword.trim());
+
     try {
-      const result = await searchNotices(searchText.trim());
+      const result = await searchNotices(keyword.trim());
       if (result.success) {
         setSearchResults(result.data);
       } else {
@@ -51,8 +137,12 @@ export default function Search() {
     }
   };
 
+  const handleSearch = () => {
+    performSearch(searchText);
+  };
+
   const handleNoticePress = (notice: Notice) => {
-    (navigation as any).navigate("detail", { notice });
+    (navigation as any).navigate("Detail", { notice });
   };
 
   if (!fontsLoaded) return null;
@@ -70,7 +160,7 @@ export default function Search() {
           borderColor: "#BDBDBD",
           paddingHorizontal: 15,
           paddingVertical: 10,
-          marginBottom: 20,
+          marginBottom: 15,
         }}
       >
         <Image
@@ -109,6 +199,83 @@ export default function Search() {
         )}
       </View>
 
+      {/* 최근 검색어 영역 (검색 전에만 표시) */}
+      {!hasSearched && recentSearches.length > 0 && (
+        <View style={{ marginBottom: 20 }}>
+          <Text
+            style={{
+              fontFamily: "Pretendard-Bold",
+              fontSize: 14,
+              color: "#333",
+              marginBottom: 10,
+            }}
+          >
+            최근 검색어
+          </Text>
+          {recentSearches.map((item, index) => (
+            <View
+              key={`${item.keyword}-${index}`}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingVertical: 10,
+                borderBottomWidth: 1,
+                borderBottomColor: "#f0f0f0",
+              }}
+            >
+              <TouchableOpacity
+                style={{ flex: 1, flexDirection: "row", alignItems: "center" }}
+                onPress={() => handleRecentSearchPress(item.keyword)}
+              >
+                <Image
+                  source={require("../../assets/images/search.png")}
+                  style={{
+                    width: 16,
+                    height: 16,
+                    marginRight: 10,
+                    tintColor: "#999",
+                  }}
+                />
+                <Text
+                  style={{
+                    fontFamily: "Pretendard-Regular",
+                    fontSize: 14,
+                    color: "#333",
+                    flex: 1,
+                  }}
+                >
+                  {item.keyword}
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Pretendard-Light",
+                    fontSize: 12,
+                    color: "#999",
+                    marginRight: 10,
+                  }}
+                >
+                  {item.date}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => deleteRecentSearch(item.keyword)}
+                style={{ padding: 5 }}
+              >
+                <Image
+                  source={require("../../assets/images/close.png")}
+                  style={{
+                    width: 12,
+                    height: 12,
+                    tintColor: "#999",
+                  }}
+                />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
+
       {/* 검색 결과 영역 */}
       {isSearching ? (
         <View
@@ -135,15 +302,17 @@ export default function Search() {
             marginBottom: 100,
           }}
         >
-          <Text
-            style={{
-              fontFamily: "Pretendard-Light",
-              fontSize: 16,
-              color: "#999",
-            }}
-          >
-            검색어를 입력해주세요
-          </Text>
+          {recentSearches.length === 0 && (
+            <Text
+              style={{
+                fontFamily: "Pretendard-Light",
+                fontSize: 16,
+                color: "#999",
+              }}
+            >
+              검색어를 입력해주세요
+            </Text>
+          )}
         </View>
       ) : (
         <ScrollView style={{ flex: 1 }}>
@@ -197,11 +366,9 @@ export default function Search() {
                         color: "#666",
                       }}
                     >
-                      {new Date(
-                        notice.date || notice.publishedAt
-                      ).toLocaleDateString("ko-KR")}
+                      {parseDate(notice.date || notice.publishedAt).toLocaleDateString("ko-KR")}
                     </Text>
-                    {notice.category && (
+                    {notice.detailCategory && (
                       <Text
                         style={{
                           fontFamily: "Pretendard-Light",
@@ -214,7 +381,19 @@ export default function Search() {
                           backgroundColor: "#8e8e8e",
                         }}
                       >
-                        {notice.category}
+                        {notice.detailCategory}
+                      </Text>
+                    )}
+                    {(notice.hits !== undefined || notice.viewCount !== undefined) && (
+                      <Text
+                        style={{
+                          fontFamily: "Pretendard-Light",
+                          fontSize: 10,
+                          color: "#999",
+                          marginLeft: 8,
+                        }}
+                      >
+                        조회 {notice.hits ?? notice.viewCount}
                       </Text>
                     )}
                   </View>

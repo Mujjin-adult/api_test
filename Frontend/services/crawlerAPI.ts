@@ -282,10 +282,25 @@ export const searchNotices = async (
       throw new Error(data.message || "검색에 실패했습니다.");
     }
 
+    // Backend 응답 구조: { success, data: { results: [...], totalCount } }
+    let results = [];
+    let total = 0;
+
+    if (data.data && data.data.results) {
+      results = data.data.results;
+      total = data.data.totalCount || results.length;
+    } else if (data.results) {
+      results = data.results;
+      total = data.totalCount || results.length;
+    } else if (Array.isArray(data.data)) {
+      results = data.data;
+      total = results.length;
+    }
+
     return {
       success: true,
-      data: data.notices || data.results || data.data || [],
-      total: data.total || 0,
+      data: results,
+      total: total,
     };
   } catch (error) {
     console.error("공지사항 검색 오류:", error);

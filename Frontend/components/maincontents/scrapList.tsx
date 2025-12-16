@@ -12,6 +12,21 @@ import {
 import { useBookmark } from "../../context/BookmarkContext";
 import { Notice } from "../../services/crawlerAPI";
 
+// 날짜 문자열을 파싱하는 헬퍼 함수 (YYYY.MM.DD, YYYY-MM-DD, ISO 형식 지원)
+const parseDate = (dateStr: string | undefined | null): Date => {
+  if (!dateStr) return new Date();
+
+  // YYYY.MM.DD 형식 처리
+  if (dateStr.match(/^\d{4}\.\d{2}\.\d{2}$/)) {
+    const [year, month, day] = dateStr.split('.').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  // 기타 형식은 Date 생성자로 파싱
+  const parsed = new Date(dateStr);
+  return isNaN(parsed.getTime()) ? new Date() : parsed;
+};
+
 export default function ScrapList() {
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
@@ -130,11 +145,9 @@ export default function ScrapList() {
                         fontSize: 10,
                       }}
                     >
-                      {new Date(
-                        notice.publishedAt || notice.date || new Date()
-                      ).toLocaleDateString("ko-KR")}
+                      {parseDate(notice.date || notice.publishedAt).toLocaleDateString("ko-KR")}
                     </Text>
-                    {(notice.categoryCode || notice.category) && (
+                    {notice.detailCategory && (
                       <Text
                         style={{
                           fontFamily: "Pretendard-Light",
@@ -149,7 +162,19 @@ export default function ScrapList() {
                           backgroundColor: "#8e8e8e",
                         }}
                       >
-                        {notice.categoryCode || notice.category}
+                        {notice.detailCategory}
+                      </Text>
+                    )}
+                    {(notice.hits !== undefined || notice.viewCount !== undefined) && (
+                      <Text
+                        style={{
+                          fontFamily: "Pretendard-Light",
+                          fontSize: 10,
+                          color: "#999",
+                          marginLeft: 8,
+                        }}
+                      >
+                        조회 {notice.hits ?? notice.viewCount}
                       </Text>
                     )}
                   </View>

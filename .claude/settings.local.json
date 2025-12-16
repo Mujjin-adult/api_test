@@ -28,7 +28,9 @@
       "Bash(where:*)",
       "Bash(echo $env:JAVA_HOME)",
       "Bash(ls:*)",
-      "Bash(npm run generate:api:*)"
+      "Bash(npm run generate:api:*)",
+      "Bash(TZ=Asia/Seoul date:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []
