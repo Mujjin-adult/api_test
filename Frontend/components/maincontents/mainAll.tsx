@@ -250,11 +250,27 @@ export default function MainContents({ category, onCategoriesExtracted }: MainCo
 
   if (!fontsLoaded) return null;
 
+  // 날짜 문자열을 파싱하는 헬퍼 함수 (YYYY.MM.DD, YYYY-MM-DD, ISO 형식 지원)
+  const parseDate = (dateStr: string | undefined | null): Date => {
+    if (!dateStr) return new Date();
+
+    // YYYY.MM.DD 형식 처리
+    if (dateStr.match(/^\d{4}\.\d{2}\.\d{2}$/)) {
+      const [year, month, day] = dateStr.split('.').map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    // 기타 형식은 Date 생성자로 파싱
+    const parsed = new Date(dateStr);
+    return isNaN(parsed.getTime()) ? new Date() : parsed;
+  };
+
   // 날짜별로 그룹화
   const groupedNotices: { [key: string]: Notice[] } = {};
   notices.forEach((notice) => {
-    const dateStr = notice.publishedAt || notice.date || new Date().toISOString();
-    const date = new Date(dateStr).toISOString().split("T")[0]; // YYYY-MM-DD
+    const dateStr = notice.date || notice.publishedAt;
+    const parsedDate = parseDate(dateStr);
+    const date = parsedDate.toISOString().split("T")[0]; // YYYY-MM-DD
     if (!groupedNotices[date]) {
       groupedNotices[date] = [];
     }
@@ -385,7 +401,7 @@ export default function MainContents({ category, onCategoriesExtracted }: MainCo
                                     fontSize: 10,
                                   }}
                                 >
-                                  {new Date(notice.publishedAt || notice.date || new Date()).toLocaleDateString("ko-KR")}
+                                  {parseDate(notice.date || notice.publishedAt).toLocaleDateString("ko-KR")}
                                 </Text>
                                 {notice.detailCategory && (
                                   <Text
