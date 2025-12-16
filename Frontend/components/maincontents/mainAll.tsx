@@ -70,6 +70,21 @@ interface MainContentsProps {
   onCategoriesExtracted?: (categories: string[]) => void;
 }
 
+// 날짜 문자열을 파싱하는 헬퍼 함수 (YYYY.MM.DD, YYYY-MM-DD, ISO 형식 지원)
+const parseDate = (dateStr: string | undefined | null): Date => {
+  if (!dateStr) return new Date();
+
+  // YYYY.MM.DD 형식 처리
+  if (dateStr.match(/^\d{4}\.\d{2}\.\d{2}$/)) {
+    const [year, month, day] = dateStr.split('.').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  // 기타 형식은 Date 생성자로 파싱
+  const parsed = new Date(dateStr);
+  return isNaN(parsed.getTime()) ? new Date() : parsed;
+};
+
 export default function MainContents({ category, onCategoriesExtracted }: MainContentsProps) {
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
@@ -91,7 +106,7 @@ export default function MainContents({ category, onCategoriesExtracted }: MainCo
   const fetchNotices = async () => {
     setIsLoading(true);
     try {
-      const result = await getNotices(1, 100); // 카테고리 없이 전체 조회
+      const result = await getNotices(0, 500); // 페이지 0부터 시작, 최대 500개 조회
       if (result.success && result.data.length > 0) {
         setAllNotices(result.data);
 
@@ -131,12 +146,17 @@ export default function MainContents({ category, onCategoriesExtracted }: MainCo
     }
   };
 
-  // 카테고리별로 필터링된 공지사항
-  const notices = category
+  // 카테고리별로 필터링 후 최신순 정렬
+  const notices = (category
     ? allNotices.filter(notice =>
-        notice.categoryCode === category || notice.category === category
+        notice.source === category
       )
-    : allNotices;
+    : allNotices
+  ).sort((a, b) => {
+    const dateA = parseDate(a.date || a.publishedAt);
+    const dateB = parseDate(b.date || b.publishedAt);
+    return dateB.getTime() - dateA.getTime(); // 최신순 (내림차순)
+  });
 
   // 새로고침
   const onRefresh = async () => {
@@ -250,34 +270,19 @@ export default function MainContents({ category, onCategoriesExtracted }: MainCo
 
   if (!fontsLoaded) return null;
 
-  // 날짜 문자열을 파싱하는 헬퍼 함수 (YYYY.MM.DD, YYYY-MM-DD, ISO 형식 지원)
-  const parseDate = (dateStr: string | undefined | null): Date => {
-    if (!dateStr) return new Date();
-
-    // YYYY.MM.DD 형식 처리
-    if (dateStr.match(/^\d{4}\.\d{2}\.\d{2}$/)) {
-      const [year, month, day] = dateStr.split('.').map(Number);
-      return new Date(year, month - 1, day);
-    }
-
-    // 기타 형식은 Date 생성자로 파싱
-    const parsed = new Date(dateStr);
-    return isNaN(parsed.getTime()) ? new Date() : parsed;
-  };
-
-  // 날짜별로 그룹화
+  // 월별로 그룹화
   const groupedNotices: { [key: string]: Notice[] } = {};
   notices.forEach((notice) => {
     const dateStr = notice.date || notice.publishedAt;
     const parsedDate = parseDate(dateStr);
-    const date = parsedDate.toISOString().split("T")[0]; // YYYY-MM-DD
-    if (!groupedNotices[date]) {
-      groupedNotices[date] = [];
+    const yearMonth = `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+    if (!groupedNotices[yearMonth]) {
+      groupedNotices[yearMonth] = [];
     }
-    groupedNotices[date].push(notice);
+    groupedNotices[yearMonth].push(notice);
   });
 
-  const dates = Object.keys(groupedNotices).sort((a, b) => b.localeCompare(a)); // 최신 날짜순
+  const months = Object.keys(groupedNotices).sort((a, b) => b.localeCompare(a)); // 최신 월순
 
   // 첫 로딩 중일 때만 로딩 화면 표시
   if (isLoading && allNotices.length === 0) {
@@ -299,9 +304,9 @@ export default function MainContents({ category, onCategoriesExtracted }: MainCo
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-          {dates.map((date) => {
+          {months.map((month) => {
             return (
-              <View key={date}>
+              <View key={month}>
                 <Text
                   style={{
                     fontFamily: "Pretendard-Light",
@@ -311,7 +316,7 @@ export default function MainContents({ category, onCategoriesExtracted }: MainCo
                     marginLeft: 15,
                   }}
                 >
-                  {date}
+                  {month}
                 </Text>
 
                 <View
@@ -322,7 +327,7 @@ export default function MainContents({ category, onCategoriesExtracted }: MainCo
                     overflow: "visible",
                   }}
                 >
-                  {groupedNotices[date].map((notice, i) => {
+                  {groupedNotices[month].map((notice, i) => {
                     const swipeKey = `${notice.id}`;
                     return (
                       <Swipeable
