@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Image,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -52,6 +53,16 @@ export default function Search() {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // 새로고침 (검색 결과 초기화하여 다시 검색 가능하게)
+  const onRefresh = () => {
+    setRefreshing(true);
+    setHasSearched(false);
+    setSearchResults([]);
+    setSearchText("");
+    setRefreshing(false);
+  };
 
   // 앱 시작 시 최근 검색어 불러오기
   useEffect(() => {
@@ -315,7 +326,13 @@ export default function Search() {
           )}
         </View>
       ) : (
-        <ScrollView style={{ flex: 1 }}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
           {searchResults.length > 0 ? (
             <>
               <Text
