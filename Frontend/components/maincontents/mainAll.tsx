@@ -278,7 +278,7 @@ export default function MainContents({ category, onCategoriesExtracted }: MainCo
   return (
     <View style={{ flex: 1, backgroundColor: "white" }}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 0 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
