@@ -55,7 +55,7 @@ export default function Alert() {
   const loadDetailCategories = async () => {
     try {
       setIsFetchingCategories(true);
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await AsyncStorage.getItem("authToken");
       if (!token) {
         RNAlert.alert("오류", "로그인이 필요합니다.");
         return;
@@ -90,7 +90,7 @@ export default function Alert() {
     setIsLoading(true);
 
     try {
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await AsyncStorage.getItem("authToken");
       if (!token) {
         RNAlert.alert("오류", "로그인이 필요합니다.");
         return;
