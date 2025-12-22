@@ -13,9 +13,16 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Notice, searchNotices } from "../../services/crawlerAPI";
+import {
+  getRecentSearches as fetchRecentSearches,
+  saveRecentSearch as saveRecentSearchAPI,
+  deleteRecentSearch as deleteRecentSearchAPI,
+  RecentSearch as ServerRecentSearch,
+} from "../../services/searchAPI";
 
-// 최근 검색어 타입
+// 최근 검색어 타입 (로컬용)
 interface RecentSearch {
+  id?: number; // 서버 ID
   keyword: string;
   date: string; // YYYY-MM-DD
 }
@@ -72,9 +79,25 @@ export default function Search() {
   // 최근 검색어 불러오기
   const loadRecentSearches = async () => {
     try {
+      // 로컬 캐시 먼저 불러오기
       const stored = await AsyncStorage.getItem(RECENT_SEARCH_KEY);
       if (stored) {
         setRecentSearches(JSON.parse(stored));
+      }
+
+      // 서버에서 동기화
+      const token = await AsyncStorage.getItem("userToken");
+      if (token) {
+        const response = await fetchRecentSearches(token);
+        if (response.success && response.data) {
+          const serverSearches: RecentSearch[] = response.data.map((item: ServerRecentSearch) => ({
+            id: item.id,
+            keyword: item.keyword,
+            date: new Date(item.searchedAt).toISOString().split('T')[0], // YYYY-MM-DD 형식
+          }));
+          setRecentSearches(serverSearches);
+          await AsyncStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(serverSearches));
+        }
       }
     } catch (error) {
       console.error("최근 검색어 불러오기 오류:", error);
@@ -84,13 +107,32 @@ export default function Search() {
   // 최근 검색어 저장하기
   const saveRecentSearch = async (keyword: string) => {
     try {
+      const token = await AsyncStorage.getItem("userToken");
+
       // 로컬 시간 기준으로 YYYY-MM-DD 형식 생성
       const now = new Date();
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const day = String(now.getDate()).padStart(2, '0');
       const today = `${year}-${month}-${day}`;
-      const newSearch: RecentSearch = { keyword, date: today };
+
+      let newSearch: RecentSearch = { keyword, date: today };
+
+      // 서버에 저장
+      if (token) {
+        try {
+          const response = await saveRecentSearchAPI(keyword, token);
+          if (response.success && response.data) {
+            newSearch = {
+              id: response.data.id,
+              keyword: response.data.keyword,
+              date: new Date(response.data.searchedAt).toISOString().split('T')[0],
+            };
+          }
+        } catch (error) {
+          console.error("서버 검색어 저장 오류:", error);
+        }
+      }
 
       // 기존 검색어 중 같은 키워드 제거 후 맨 앞에 추가
       const filtered = recentSearches.filter((item) => item.keyword !== keyword);
@@ -106,6 +148,19 @@ export default function Search() {
   // 최근 검색어 삭제
   const deleteRecentSearch = async (keyword: string) => {
     try {
+      const token = await AsyncStorage.getItem("userToken");
+      const searchItem = recentSearches.find((item) => item.keyword === keyword);
+
+      // 서버에서 삭제
+      if (token && searchItem?.id) {
+        try {
+          await deleteRecentSearchAPI(searchItem.id, token);
+        } catch (error) {
+          console.error("서버 검색어 삭제 오류:", error);
+        }
+      }
+
+      // 로컬에서 삭제
       const updated = recentSearches.filter((item) => item.keyword !== keyword);
       setRecentSearches(updated);
       await AsyncStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(updated));

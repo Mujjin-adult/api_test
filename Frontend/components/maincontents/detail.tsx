@@ -1,5 +1,5 @@
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ActivityIndicator, Image, Linking, Platform, ScrollView, Share, Text, TouchableOpacity, View } from "react-native";
 import { Notice, getNoticeDetail } from "../../services/crawlerAPI";
 import { useBookmark } from "../../context/BookmarkContext";
@@ -10,7 +10,11 @@ if (Platform.OS !== "web") {
   WebView = require("react-native-webview").WebView;
 }
 
-export default function Detail() {
+interface DetailProps {
+  onWebViewStateChange?: (isWebView: boolean) => void;
+}
+
+export default function Detail({ onWebViewStateChange }: DetailProps = {}) {
   const route = useRoute();
   const navigation = useNavigation();
   const params = route.params as { notice?: Notice } | undefined;
@@ -20,6 +24,9 @@ export default function Detail() {
   const [isLoading, setIsLoading] = useState(false);
   const [showWebView, setShowWebView] = useState(true); // 기본값을 true로 변경하여 바로 웹뷰 표시
   const [webViewLoading, setWebViewLoading] = useState(true);
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [canGoForward, setCanGoForward] = useState(false);
+  const webViewRef = useRef<any>(null);
 
   // 공지사항 상세 정보 불러오기 (API 사용)
   const fetchNoticeDetail = async (id: string) => {
@@ -42,6 +49,13 @@ export default function Detail() {
       fetchNoticeDetail(notice.id);
     }
   }, []);
+
+  // 웹뷰 상태 변경 시 부모 컴포넌트에 알림
+  useEffect(() => {
+    if (onWebViewStateChange) {
+      onWebViewStateChange(showWebView);
+    }
+  }, [showWebView, onWebViewStateChange]);
 
   const handleBookmark = async () => {
     if (!notice) return;
@@ -158,17 +172,25 @@ export default function Detail() {
             backgroundColor: "#fff",
           }}
         >
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text
-              style={{
-                fontFamily: "Pretendard-Bold",
-                fontSize: 14,
-                color: "#3366FF",
-              }}
-            >
-              ← 돌아가기
-            </Text>
-          </TouchableOpacity>
+          {/* 뒤로가기/앞으로가기 버튼 */}
+          {Platform.OS !== "web" && (
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <TouchableOpacity
+                onPress={() => webViewRef.current?.goBack()}
+                disabled={!canGoBack}
+                style={{ marginRight: 10, opacity: canGoBack ? 1 : 0.3 }}
+              >
+                <Text style={{ fontSize: 18 }}>←</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => webViewRef.current?.goForward()}
+                disabled={!canGoForward}
+                style={{ marginRight: 10, opacity: canGoForward ? 1 : 0.3 }}
+              >
+                <Text style={{ fontSize: 18 }}>→</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           <Text
             style={{
               fontFamily: "Pretendard-Regular",
@@ -242,6 +264,7 @@ export default function Detail() {
         ) : (
           WebView && (
             <WebView
+              ref={webViewRef}
               source={{ uri: notice.url }}
               style={{ flex: 1 }}
               onLoadStart={() => setWebViewLoading(true)}
@@ -269,9 +292,15 @@ export default function Detail() {
                 }
                 return true;
               }}
-              // Android: URL 변경 감지
+              // Android: URL 변경 감지 및 뒤로가기/앞으로가기 버튼 상태 업데이트
               onNavigationStateChange={(navState: any) => {
                 const url = navState.url;
+
+                // 뒤로가기/앞으로가기 버튼 상태 업데이트
+                setCanGoBack(navState.canGoBack);
+                setCanGoForward(navState.canGoForward);
+
+                // 파일 다운로드 처리
                 if (url.match(/\.(pdf|hwp|hwpx|doc|docx|xls|xlsx|ppt|pptx|zip|rar|7z)(\?.*)?$/i)) {
                   Linking.openURL(url);
                 }

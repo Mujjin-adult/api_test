@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Notice } from "../services/crawlerAPI";
+import { createBookmark, deleteBookmark } from "../services/bookmarkAPI";
+import { getBookmarkedNotices } from "../services/noticeAPI";
 
 interface BookmarkContextType {
   bookmarkedNotices: Notice[];
@@ -9,14 +11,17 @@ interface BookmarkContextType {
   toggleBookmark: (notice: Notice) => Promise<void>;
   addBookmark: (notice: Notice) => Promise<void>;
   removeBookmark: (id: string) => Promise<void>;
+  syncBookmarks: () => Promise<void>;
 }
 
 const BookmarkContext = createContext<BookmarkContextType | undefined>(undefined);
 
 const BOOKMARK_STORAGE_KEY = "bookmarkedNotices";
+const BOOKMARK_MAP_KEY = "bookmarkIdMap"; // noticeId -> bookmarkId 매핑
 
 export function BookmarkProvider({ children }: { children: ReactNode }) {
   const [bookmarkedNotices, setBookmarkedNotices] = useState<Notice[]>([]);
+  const [bookmarkIdMap, setBookmarkIdMap] = useState<{ [noticeId: string]: number }>({});
 
   // 앱 시작 시 저장된 북마크 불러오기
   useEffect(() => {
@@ -25,20 +30,46 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
 
   const loadBookmarks = async () => {
     try {
+      // 로컬 캐시 불러오기
       const saved = await AsyncStorage.getItem(BOOKMARK_STORAGE_KEY);
+      const savedMap = await AsyncStorage.getItem(BOOKMARK_MAP_KEY);
       if (saved) {
         setBookmarkedNotices(JSON.parse(saved));
       }
+      if (savedMap) {
+        setBookmarkIdMap(JSON.parse(savedMap));
+      }
+
+      // 서버에서 동기화
+      await syncBookmarks();
     } catch (error) {
       console.error("북마크 불러오기 오류:", error);
     }
   };
 
-  const saveBookmarks = async (notices: Notice[]) => {
+  const saveBookmarks = async (notices: Notice[], idMap?: { [noticeId: string]: number }) => {
     try {
       await AsyncStorage.setItem(BOOKMARK_STORAGE_KEY, JSON.stringify(notices));
+      if (idMap) {
+        await AsyncStorage.setItem(BOOKMARK_MAP_KEY, JSON.stringify(idMap));
+      }
     } catch (error) {
       console.error("북마크 저장 오류:", error);
+    }
+  };
+
+  const syncBookmarks = async () => {
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) return;
+
+      const response = await getBookmarkedNotices({ page: 0, size: 100, token });
+      if (response.success && response.data.content) {
+        setBookmarkedNotices(response.data.content as unknown as Notice[]);
+        await AsyncStorage.setItem(BOOKMARK_STORAGE_KEY, JSON.stringify(response.data.content));
+      }
+    } catch (error) {
+      console.error("북마크 동기화 오류:", error);
     }
   };
 
@@ -57,17 +88,57 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
   };
 
   const addBookmark = async (notice: Notice) => {
-    if (!isBookmarked(notice.id)) {
-      const updated = [...bookmarkedNotices, notice];
-      setBookmarkedNotices(updated);
-      await saveBookmarks(updated);
+    if (isBookmarked(notice.id)) return;
+
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) {
+        throw new Error("로그인이 필요합니다");
+      }
+
+      // 서버에 북마크 추가
+      const response = await createBookmark(parseInt(notice.id), token);
+
+      if (response.success) {
+        // 로컬 상태 업데이트
+        const updated = [...bookmarkedNotices, notice];
+        const newMap = { ...bookmarkIdMap, [notice.id]: response.data.id };
+
+        setBookmarkedNotices(updated);
+        setBookmarkIdMap(newMap);
+        await saveBookmarks(updated, newMap);
+      }
+    } catch (error) {
+      console.error("북마크 추가 오류:", error);
+      throw error;
     }
   };
 
   const removeBookmark = async (id: string) => {
-    const updated = bookmarkedNotices.filter((n) => n.id !== id);
-    setBookmarkedNotices(updated);
-    await saveBookmarks(updated);
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) {
+        throw new Error("로그인이 필요합니다");
+      }
+
+      const bookmarkId = bookmarkIdMap[id];
+      if (bookmarkId) {
+        // 서버에서 북마크 삭제
+        await deleteBookmark(bookmarkId, token);
+      }
+
+      // 로컬 상태 업데이트
+      const updated = bookmarkedNotices.filter((n) => n.id !== id);
+      const newMap = { ...bookmarkIdMap };
+      delete newMap[id];
+
+      setBookmarkedNotices(updated);
+      setBookmarkIdMap(newMap);
+      await saveBookmarks(updated, newMap);
+    } catch (error) {
+      console.error("북마크 삭제 오류:", error);
+      throw error;
+    }
   };
 
   return (
@@ -79,6 +150,7 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
         toggleBookmark,
         addBookmark,
         removeBookmark,
+        syncBookmarks,
       }}
     >
       {children}

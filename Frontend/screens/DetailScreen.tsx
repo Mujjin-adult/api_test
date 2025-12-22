@@ -20,6 +20,7 @@ type DetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 
 export default function DetailScreen() {
   const navigation = useNavigation<DetailScreenNavigationProp>();
   const [activeTab, setActiveTab] = useState<number>(0);
+  const [isWebViewMode, setIsWebViewMode] = useState<boolean>(false);
 
   const handleTabPress = (index: number) => {
     setActiveTab(index);
@@ -33,12 +34,20 @@ export default function DetailScreen() {
     navigation.navigate('Alert');
   };
 
+  const handleWebViewStateChange = (isWebView: boolean) => {
+    setIsWebViewMode(isWebView);
+  };
+
   return (
     <View style={styles.container}>
-      <Header showBackButton={true} onAlertToggle={handleAlertToggle} onBackPress={handleBackPress} />
-      {activeTab === 1 ? <Scrap /> : <All />}
-      <Detail />
-      <BottomBar onTabPress={handleTabPress} />
+      {!isWebViewMode && (
+        <>
+          <Header showBackButton={true} onAlertToggle={handleAlertToggle} onBackPress={handleBackPress} />
+          {activeTab === 1 ? <Scrap /> : <All />}
+        </>
+      )}
+      <Detail onWebViewStateChange={handleWebViewStateChange} />
+      {!isWebViewMode && <BottomBar onTabPress={handleTabPress} />}
     </View>
   );
 }

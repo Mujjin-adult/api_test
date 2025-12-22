@@ -1,9 +1,16 @@
 import { useFonts } from "expo-font";
 import React, { useState, useEffect } from "react";
 import { Text, TouchableOpacity, View, ScrollView, Alert as RNAlert, Platform, ActivityIndicator } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getToken, messaging } from "../../config/firebaseConfig";
 import { updateUserKeywords } from "../../services/userAPI";
 import { api } from "../../services/apiClient";
+import {
+  getDetailCategories,
+  updateDetailCategorySubscriptions,
+  DetailCategoryResponse,
+  DetailCategorySubscription,
+} from "../../services/preferenceAPI";
 
 export default function Alert() {
   const [fontsLoaded] = useFonts({
@@ -14,31 +21,11 @@ export default function Alert() {
     "Pretendard-Regular": require("../../assets/fonts/Pretendard-Regular.ttf"),
   });
 
-  const categories = [
-    "학사",
-    "학점교류",
-    "일반/행사/모집",
-    "장학금",
-    "등록금 납부",
-    "교육시험",
-    "봉사",
-    "채용정보",
-  ];
-
-  const subCategories = [
-    ["전체"],
-    ["전체"],
-    ["전체", "일반", "행사", "모집"],
-    ["국가장학금", "교외장학금", "기타","국가근로장학금","교내 봉사장학금"],
-    ["전체"],
-    ["전체"],
-    ["전체"],
-    ["전체","모집중","마감"],
-  ];
-
-  const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>([]);
+  const [detailCategories, setDetailCategories] = useState<DetailCategoryResponse[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [fcmToken, setFcmToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingCategories, setIsFetchingCategories] = useState(true);
 
   // FCM 토큰 가져오기
   useEffect(() => {
@@ -60,64 +47,79 @@ export default function Alert() {
     }
   };
 
+  // 상세 카테고리 불러오기
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await api.getAllCategories();
-        console.log("Fetched Categories:", response.data);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      }
-    };
-    fetchCategories();
+    loadDetailCategories();
   }, []);
 
-  const toggleSubCategory = (categoryIndex: number, subCategory: string) => {
-    const uniqueKey = `${categoryIndex}-${subCategory}`;
-    setSelectedSubCategories((prev) =>
-      prev.includes(uniqueKey)
-        ? prev.filter((c) => c !== uniqueKey)
-        : [...prev, uniqueKey]
+  const loadDetailCategories = async () => {
+    try {
+      setIsFetchingCategories(true);
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) {
+        RNAlert.alert("오류", "로그인이 필요합니다.");
+        return;
+      }
+
+      const response = await getDetailCategories(token);
+      if (response.success && response.data) {
+        setDetailCategories(response.data);
+        // 이미 구독된 카테고리 ID 설정
+        const subscribedIds = response.data
+          .filter((cat) => cat.subscribed)
+          .map((cat) => cat.id);
+        setSelectedCategoryIds(subscribedIds);
+      }
+    } catch (error) {
+      console.error("상세 카테고리 불러오기 오류:", error);
+      RNAlert.alert("오류", "카테고리 정보를 불러올 수 없습니다.");
+    } finally {
+      setIsFetchingCategories(false);
+    }
+  };
+
+  const toggleCategory = (categoryId: number) => {
+    setSelectedCategoryIds((prev) =>
+      prev.includes(categoryId)
+        ? prev.filter((id) => id !== categoryId)
+        : [...prev, categoryId]
     );
   };
 
   const handleSave = async () => {
-    if (!fcmToken) {
-      RNAlert.alert("오류", "FCM 토큰을 가져올 수 없습니다. 알림 권한을 확인해주세요.");
-      return;
-    }
-
-    if (selectedSubCategories.length === 0) {
-      RNAlert.alert("알림", "최소 하나 이상의 키워드를 선택해주세요.");
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      // 선택된 키워드를 서버에 맞는 형식으로 변환
-      const keywords = selectedSubCategories.map(key => {
-        const [categoryIndex, subCategory] = key.split("-");
-        return `${categories[parseInt(categoryIndex)]}-${subCategory}`;
-      });
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) {
+        RNAlert.alert("오류", "로그인이 필요합니다.");
+        return;
+      }
 
-      console.log("저장할 키워드:", keywords);
-      console.log("FCM 토큰:", fcmToken);
+      // 모든 카테고리에 대해 구독 상태 설정
+      const subscriptions: DetailCategorySubscription[] = detailCategories.map((cat) => ({
+        detailCategoryId: cat.id,
+        enabled: selectedCategoryIds.includes(cat.id),
+      }));
 
-      const result = await updateUserKeywords(fcmToken, keywords);
+      const response = await updateDetailCategorySubscriptions(subscriptions, token);
 
-      if (result.success) {
-        RNAlert.alert("성공", result.message);
+      if (response.success) {
+        RNAlert.alert("성공", "알림 설정이 저장되었습니다.");
+        // 최신 상태로 다시 로드
+        await loadDetailCategories();
       } else {
-        RNAlert.alert("실패", result.message);
+        RNAlert.alert("실패", response.message || "알림 설정 저장에 실패했습니다.");
       }
     } catch (error) {
-      console.error("키워드 저장 오류:", error);
-      RNAlert.alert("오류", "키워드 저장 중 오류가 발생했습니다.");
+      console.error("알림 설정 저장 오류:", error);
+      RNAlert.alert("오류", "알림 설정 저장 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (!fontsLoaded) return null;
 
   return (
     <ScrollView
@@ -136,67 +138,103 @@ export default function Alert() {
           borderBottomWidth: 1,
         }}
       >
-        알림 키워드 설정
+        알림 카테고리 설정
       </Text>
 
-      <View style={{ flex: 1 }}>
-        {categories.map((category, index) => (
-          <View
-            key={index}
+      {isFetchingCategories ? (
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            paddingVertical: 50,
+          }}
+        >
+          <ActivityIndicator size="large" color="#3366FF" />
+          <Text
             style={{
-              borderBottomWidth: 1,
-              borderColor: "#D1D1D1",
+              fontFamily: "Pretendard-Regular",
+              fontSize: 14,
+              marginTop: 10,
+              color: "#666",
             }}
           >
-            <View style={{ padding: 15 }}>
+            카테고리 불러오는 중...
+          </Text>
+        </View>
+      ) : (
+        <View style={{ flex: 1 }}>
+          {detailCategories.length === 0 ? (
+            <View
+              style={{
+                padding: 20,
+                alignItems: "center",
+              }}
+            >
               <Text
                 style={{
-                  fontFamily: "Pretendard-Bold",
-                  fontSize:23,
-                  color: "black",
-                  marginBottom: 5,
+                  fontFamily: "Pretendard-Regular",
+                  fontSize: 14,
+                  color: "#999",
                 }}
               >
-                {category}
+                사용 가능한 카테고리가 없습니다.
               </Text>
-              <View style={{ 
-                flexDirection: "row", 
-                flexWrap: "wrap", 
-                marginTop: 10,
-                gap: 15,
-              }}>
-                {subCategories[index].map((subCategory, subIndex) => {
-                  const uniqueKey = `${index}-${subCategory}`;
-                  return (
-                    <TouchableOpacity
-                      key={subIndex}
-                      onPress={() => toggleSubCategory(index, subCategory)}
-                      style={{
-                        backgroundColor: selectedSubCategories.includes(uniqueKey) ? "#3366FF" : "#ffffff",
-                        paddingHorizontal: 5,
-                        paddingVertical: 2,
-                        borderRadius: 3,
-                        borderWidth: 1,
-                        borderColor: "#D1D1D1",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontFamily: "Pretendard-Regular",
-                          fontSize: 17,
-                          color: selectedSubCategories.includes(uniqueKey) ? "#ffffff" : "#555",
-                        }}
-                      >
-                        {subCategory}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
             </View>
-          </View>
-        ))}
-      </View>
+          ) : (
+            detailCategories.map((category) => (
+              <View
+                key={category.id}
+                style={{
+                  borderBottomWidth: 1,
+                  borderColor: "#D1D1D1",
+                  padding: 15,
+                }}
+              >
+                <TouchableOpacity
+                  onPress={() => toggleCategory(category.id)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Pretendard-Regular",
+                      fontSize: 17,
+                      color: "#333",
+                      flex: 1,
+                    }}
+                  >
+                    {category.name}
+                  </Text>
+                  <View
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 4,
+                      borderWidth: 2,
+                      borderColor: selectedCategoryIds.includes(category.id)
+                        ? "#3366FF"
+                        : "#D1D1D1",
+                      backgroundColor: selectedCategoryIds.includes(category.id)
+                        ? "#3366FF"
+                        : "#ffffff",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    {selectedCategoryIds.includes(category.id) && (
+                      <Text style={{ color: "#ffffff", fontSize: 16 }}>✓</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
+        </View>
+      )}
 
       {/* 저장 버튼 */}
       <View style={{

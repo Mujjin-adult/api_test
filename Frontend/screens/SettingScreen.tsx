@@ -30,7 +30,7 @@ export default function SettingScreen() {
         navigation.navigate('Scrap');
         break;
       case 2: // AI 챗봇
-        console.log('AI 챗봇 - 준비 중');
+        navigation.navigate('Chatbot');
         break;
       case 3: // 검색
         navigation.navigate('Search');

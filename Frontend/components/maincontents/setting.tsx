@@ -1,8 +1,11 @@
 import { useFonts } from "expo-font";
 import React from "react";
-import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, Text, TouchableOpacity, View, Alert } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Setting() {
+  const navigation = useNavigation();
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
     "Pretendard-ExtraBold": require("../../assets/fonts/Pretendard-ExtraBold.ttf"),
@@ -28,6 +31,84 @@ export default function Setting() {
   const plus = ["1. 개인정보 처리 방침", "앱 버전"];
 
   const subArrays = [accont, appSetting, guide, plus];
+
+  const handleLogout = async () => {
+    Alert.alert(
+      "로그아웃",
+      "로그아웃 하시겠습니까?",
+      [
+        {
+          text: "취소",
+          style: "cancel",
+        },
+        {
+          text: "로그아웃",
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem("userToken");
+              await AsyncStorage.removeItem("fcmToken");
+              (navigation as any).reset({
+                index: 0,
+                routes: [{ name: "Login" }],
+              });
+            } catch (error) {
+              console.error("로그아웃 오류:", error);
+              Alert.alert("오류", "로그아웃 중 문제가 발생했습니다.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "회원 탈퇴",
+      "정말로 회원 탈퇴하시겠습니까?\n모든 데이터가 삭제됩니다.",
+      [
+        {
+          text: "취소",
+          style: "cancel",
+        },
+        {
+          text: "탈퇴",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert("안내", "회원 탈퇴 기능은 현재 개발 중입니다.");
+          },
+        },
+      ]
+    );
+  };
+
+  const handleMenuPress = (categoryItem: string, subItem: string) => {
+    // 로그아웃
+    if (subItem === "2. 로그아웃") {
+      handleLogout();
+      return;
+    }
+
+    // 회원 탈퇴
+    if (subItem === "3. 회원 탈퇴") {
+      handleDeleteAccount();
+      return;
+    }
+
+    // 알림 설정
+    if (subItem === "3. 알림 설정") {
+      (navigation as any).navigate("Alert");
+      return;
+    }
+
+    // 앱 버전
+    if (subItem === "앱 버전") {
+      Alert.alert("앱 버전", "버전 1.0.0");
+      return;
+    }
+
+    // 나머지는 개발 중
+    Alert.alert("안내", `${subItem}\n\n현재 개발 중인 기능입니다.`);
+  };
 
   if (!fontsLoaded) return null;
 
@@ -151,9 +232,7 @@ export default function Setting() {
                     alignItems: "center",
                     justifyContent: "space-between",
                   }}
-                  onPress={() =>
-                    console.log(`${categoryItem} - ${subItem} 클릭됨`)
-                  }
+                  onPress={() => handleMenuPress(categoryItem, subItem)}
                 >
                   <Text
                     style={{
@@ -165,15 +244,29 @@ export default function Setting() {
                   >
                     {subItem}
                   </Text>
-                  <Text
-                    style={{
-                      fontSize: 25,
-                      color: "#000000",
-                      marginRight: 10,
-                    }}
-                  >
-                    ›
-                  </Text>
+                  {subItem !== "앱 버전" && (
+                    <Text
+                      style={{
+                        fontSize: 25,
+                        color: "#000000",
+                        marginRight: 10,
+                      }}
+                    >
+                      ›
+                    </Text>
+                  )}
+                  {subItem === "앱 버전" && (
+                    <Text
+                      style={{
+                        fontFamily: "Pretendard-Light",
+                        fontSize: 13,
+                        color: "#999",
+                        marginRight: 10,
+                      }}
+                    >
+                      v1.0.0
+                    </Text>
+                  )}
                 </TouchableOpacity>
               ))}
             </View>
