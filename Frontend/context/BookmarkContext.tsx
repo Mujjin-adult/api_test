@@ -60,7 +60,7 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
 
   const syncBookmarks = async () => {
     try {
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await AsyncStorage.getItem("authToken");
       if (!token) return;
 
       const response = await getBookmarkedNotices({ page: 0, size: 100, token });
@@ -91,7 +91,7 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
     if (isBookmarked(notice.id)) return;
 
     try {
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await AsyncStorage.getItem("authToken");
       if (!token) {
         throw new Error("로그인이 필요합니다");
       }
@@ -116,7 +116,7 @@ export function BookmarkProvider({ children }: { children: ReactNode }) {
 
   const removeBookmark = async (id: string) => {
     try {
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await AsyncStorage.getItem("authToken");
       if (!token) {
         throw new Error("로그인이 필요합니다");
       }

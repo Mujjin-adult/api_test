@@ -86,7 +86,7 @@ export default function Search() {
       }
 
       // 서버에서 동기화
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await AsyncStorage.getItem("authToken");
       if (token) {
         const response = await fetchRecentSearches(token);
         if (response.success && response.data) {
@@ -107,7 +107,7 @@ export default function Search() {
   // 최근 검색어 저장하기
   const saveRecentSearch = async (keyword: string) => {
     try {
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await AsyncStorage.getItem("authToken");
 
       // 로컬 시간 기준으로 YYYY-MM-DD 형식 생성
       const now = new Date();
@@ -148,7 +148,7 @@ export default function Search() {
   // 최근 검색어 삭제
   const deleteRecentSearch = async (keyword: string) => {
     try {
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await AsyncStorage.getItem("authToken");
       const searchItem = recentSearches.find((item) => item.keyword === keyword);
 
       // 서버에서 삭제
