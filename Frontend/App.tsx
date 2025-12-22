@@ -3,7 +3,9 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BookmarkProvider } from './context/BookmarkContext';
-import { NotificationProvider } from './context/NotificationContext';
+import { NotificationProvider, useNotification } from './context/NotificationContext';
+import { Modal, StyleSheet, TouchableWithoutFeedback, View } from 'react-native';
+import Alert from './components/maincontents/alert';
 
 // 화면 컴포넌트 import
 import LoginScreen from './screens/LoginScreen';
@@ -34,34 +36,81 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+function AppContent() {
+  const { isAlertOpen, toggleAlert } = useNotification();
+
+  return (
+    <View style={{ flex: 1 }}>
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName="Login"
+          screenOptions={{
+            headerShown: false,
+            animation: 'slide_from_right',
+          }}
+        >
+          <Stack.Group>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="EnterEmail" component={EnterEmailScreen} />
+            <Stack.Screen name="EnterPw" component={EnterPwScreen} />
+            <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="Detail" component={DetailScreen} />
+            <Stack.Screen name="Search" component={SearchScreen} />
+            <Stack.Screen name="Alert" component={AlertScreen} />
+            <Stack.Screen name="Scrap" component={ScrapScreen} />
+            <Stack.Screen name="Chatbot" component={ChatbotScreen} />
+          </Stack.Group>
+          <Stack.Group screenOptions={{ presentation: 'modal' }}>
+            <Stack.Screen name="Setting" component={SettingScreen} />
+          </Stack.Group>
+        </Stack.Navigator>
+      </NavigationContainer>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isAlertOpen}
+        onRequestClose={toggleAlert}
+      >
+        <TouchableWithoutFeedback onPress={toggleAlert}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                <Alert />
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    </View>
+  );
+}
+
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <NotificationProvider>
         <BookmarkProvider>
-          <NavigationContainer>
-            <Stack.Navigator
-              initialRouteName="Login"
-              screenOptions={{
-                headerShown: false,
-                animation: 'slide_from_right',
-              }}
-            >
-              <Stack.Screen name="Login" component={LoginScreen} />
-              <Stack.Screen name="EnterEmail" component={EnterEmailScreen} />
-              <Stack.Screen name="EnterPw" component={EnterPwScreen} />
-              <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
-              <Stack.Screen name="Home" component={HomeScreen} />
-              <Stack.Screen name="Detail" component={DetailScreen} />
-              <Stack.Screen name="Search" component={SearchScreen} />
-              <Stack.Screen name="Setting" component={SettingScreen} />
-              <Stack.Screen name="Alert" component={AlertScreen} />
-              <Stack.Screen name="Scrap" component={ScrapScreen} />
-              <Stack.Screen name="Chatbot" component={ChatbotScreen} />
-            </Stack.Navigator>
-          </NavigationContainer>
+          <AppContent />
         </BookmarkProvider>
       </NotificationProvider>
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    height: '80%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+});

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { StyleSheet, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -10,42 +10,22 @@ import Setting from "@/components/maincontents/setting";
 // 상단 탭바
 import Header from "@/components/topmenu/header";
 
-// 하단 탭바
-import BottomBar from "@/components/bottombar/bottombar";
-
-type SettingScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Setting'>;
+type SettingScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "Setting"
+>;
 
 export default function SettingScreen() {
   const navigation = useNavigation<SettingScreenNavigationProp>();
-  const [activeTab, setActiveTab] = useState<number>(4); // 메뉴 탭 활성화
 
-  const handleTabPress = (index: number) => {
-    setActiveTab(index);
-
-    switch (index) {
-      case 0: // 공지사항
-        navigation.navigate('Home');
-        break;
-      case 1: // 관심공지
-        navigation.navigate('Scrap');
-        break;
-      case 2: // AI 챗봇
-        navigation.navigate('Chatbot');
-        break;
-      case 3: // 검색
-        navigation.navigate('Search');
-        break;
-      case 4: // 메뉴
-        // 이미 Setting 화면이므로 아무것도 하지 않음
-        break;
-    }
+  const handleBackPress = () => {
+    navigation.goBack();
   };
 
   return (
     <View style={styles.container}>
-      <Header />
+      <Header showBackButton={true} onBackPress={handleBackPress} />
       <Setting />
-      <BottomBar onTabPress={handleTabPress} activeTab={4} />
     </View>
   );
 }
