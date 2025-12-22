@@ -1,11 +1,17 @@
 import { useFonts } from "expo-font";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Image, ScrollView, Text, TouchableOpacity, View, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { TokenService } from "../../services/tokenService";
+import { getAuth, deleteUser } from "firebase/auth";
 
 export default function Setting() {
   const navigation = useNavigation();
+  const [userName, setUserName] = useState("김민지");
+  const [userMajor, setUserMajor] = useState("컴퓨터공학부 25학번");
+  const [userEmail, setUserEmail] = useState("1234abcd@inu.ac.kr");
+
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
     "Pretendard-ExtraBold": require("../../assets/fonts/Pretendard-ExtraBold.ttf"),
@@ -14,10 +20,21 @@ export default function Setting() {
     "Pretendard-Regular": require("../../assets/fonts/Pretendard-Regular.ttf"),
   });
 
-  const userName = "홍길동";
-  const userMajor = "컴퓨터공학과";
-  const userStID = "25학번";
-  const userEmail = "s6452@inu.ac.kr";
+  useEffect(() => {
+    const loadUserInfo = async () => {
+      try {
+        const userInfo = await TokenService.getUserInfo();
+        if (userInfo) {
+          setUserName(userInfo.name || "김민지");
+          setUserEmail(userInfo.email || "1234abcd@inu.ac.kr");
+          setUserMajor(userInfo.department || "컴퓨터공학부 25학번");
+        }
+      } catch (error) {
+        console.error("사용자 정보 로드 오류:", error);
+      }
+    };
+    loadUserInfo();
+  }, []);
   const category = ["계정", "앱 설정", "이용 안내", "기타"];
   const images = [
     require("../../assets/images/person.png"),
@@ -26,62 +43,35 @@ export default function Setting() {
     require("../../assets/images/plus.png"),
   ];
   const accont = ["1. 내 정보", "2. 로그아웃", "3. 회원 탈퇴"];
-  const appSetting = ["1. 나만의 공지 텝 설정", "2. 화면모드", "3. 알림 설정"];
+  const appSetting = ["1. 화면모드", "2. 알림 설정", "3. 알림 키워드"];
   const guide = ["1. 서비스 이용 약관", "2. 문의하기", "3. 앱 소개"];
-  const plus = ["1. 개인정보 처리 방침", "앱 버전"];
+  const plus = ["1. 개인정보 처리 방침", "2. 앱 버전"];
 
   const subArrays = [accont, appSetting, guide, plus];
 
-  const handleLogout = async () => {
-    Alert.alert(
-      "로그아웃",
-      "로그아웃 하시겠습니까?",
-      [
-        {
-          text: "취소",
-          style: "cancel",
-        },
-        {
-          text: "로그아웃",
-          onPress: async () => {
-            try {
-              await AsyncStorage.removeItem("userToken");
-              await AsyncStorage.removeItem("fcmToken");
-              (navigation as any).reset({
-                index: 0,
-                routes: [{ name: "Login" }],
-              });
-            } catch (error) {
-              console.error("로그아웃 오류:", error);
-              Alert.alert("오류", "로그아웃 중 문제가 발생했습니다.");
-            }
-          },
-        },
-      ]
-    );
+  const handleLogout = () => {
+    if (window.confirm("로그아웃 하시겠습니까?")) {
+      TokenService.clearAll();
+      AsyncStorage.removeItem("fcmToken");
+      (navigation as any).reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
+      window.alert("로그아웃 되었습니다.");
+    }
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      "회원 탈퇴",
-      "정말로 회원 탈퇴하시겠습니까?\n모든 데이터가 삭제됩니다.",
-      [
-        {
-          text: "취소",
-          style: "cancel",
-        },
-        {
-          text: "탈퇴",
-          style: "destructive",
-          onPress: () => {
-            Alert.alert("안내", "회원 탈퇴 기능은 현재 개발 중입니다.");
-          },
-        },
-      ]
-    );
+    (navigation as any).navigate("DeleteAccount");
   };
 
   const handleMenuPress = (categoryItem: string, subItem: string) => {
+    // 내 정보
+    if (subItem === "1. 내 정보") {
+      (navigation as any).navigate("MyInfo");
+      return;
+    }
+
     // 로그아웃
     if (subItem === "2. 로그아웃") {
       handleLogout();
@@ -95,14 +85,20 @@ export default function Setting() {
     }
 
     // 알림 설정
-    if (subItem === "3. 알림 설정") {
-      (navigation as any).navigate("Alert");
+    if (subItem === "2. 알림 설정") {
+      (navigation as any).navigate("NotificationSettings");
+      return;
+    }
+
+    // 알림 키워드
+    if (subItem === "3. 알림 키워드") {
+      (navigation as any).navigate("KeywordSettings");
       return;
     }
 
     // 앱 버전
-    if (subItem === "앱 버전") {
-      Alert.alert("앱 버전", "버전 1.0.0");
+    if (subItem === "2. 앱 버전") {
+      Alert.alert("앱 버전", "버전 1.00");
       return;
     }
 
@@ -170,7 +166,7 @@ export default function Setting() {
                 fontSize: 15,
               }}
             >
-              {userMajor} {userStID}
+              {userMajor}
             </Text>
           </View>
           <Text
@@ -244,7 +240,7 @@ export default function Setting() {
                   >
                     {subItem}
                   </Text>
-                  {subItem !== "앱 버전" && (
+                  {subItem !== "2. 앱 버전" && (
                     <Text
                       style={{
                         fontSize: 25,
@@ -255,7 +251,7 @@ export default function Setting() {
                       ›
                     </Text>
                   )}
-                  {subItem === "앱 버전" && (
+                  {subItem === "2. 앱 버전" && (
                     <Text
                       style={{
                         fontFamily: "Pretendard-Light",
@@ -264,7 +260,7 @@ export default function Setting() {
                         marginRight: 10,
                       }}
                     >
-                      v1.0.0
+                      1.00
                     </Text>
                   )}
                 </TouchableOpacity>

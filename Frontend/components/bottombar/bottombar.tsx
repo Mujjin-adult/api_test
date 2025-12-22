@@ -42,7 +42,7 @@ export default function BottomBar({ onTabPress, activeTab = 0 }: BottomBarProps)
     { type: "image", src: require("../../assets/images/menu.png") },
   ];
 
-  const itemNames = ["공지사항", "관심공지", "AI 챗봇", "검색", "메뉴"];
+  const itemNames = ["공지사항", "공지 보관함", "AI 챗봇", "검색", "더보기"];
 
   if (!fontsLoaded) return null;
   return (

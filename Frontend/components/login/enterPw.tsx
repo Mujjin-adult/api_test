@@ -17,7 +17,7 @@ import { registerUserToBackend, signUpWithEmail } from "../../services/authAPI";
 type RootStackParamList = {
   Login: undefined;
   EnterEmail: undefined;
-  EnterPw: { email: string; name: string; studentId: string };
+  EnterPw: { email: string; name: string; studentId: string; department: string };
   Home: undefined;
   Detail: undefined;
   Search: undefined;
@@ -36,7 +36,7 @@ type EnterPwScreenRouteProp = RouteProp<RootStackParamList, "EnterPw">;
 export default function EnterPw() {
   const navigation = useNavigation<EnterPwScreenNavigationProp>();
   const route = useRoute<EnterPwScreenRouteProp>();
-  const { email, name, studentId } = route.params;
+  const { email, name, studentId, department } = route.params;
   const { width } = Dimensions.get("window");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -125,7 +125,7 @@ export default function EnterPw() {
         studentId,
         email,
         password,
-        "미지정" // department - 추후 입력 가능
+        department
       );
 
       if (!backendResult.success) {

@@ -19,6 +19,12 @@ import SettingScreen from './screens/SettingScreen';
 import AlertScreen from './screens/AlertScreen';
 import ScrapScreen from './screens/ScrapScreen';
 import ChatbotScreen from './screens/ChatbotScreen';
+import MyInfoScreen from './screens/MyInfoScreen';
+import DepartmentSelectionScreen from './screens/DepartmentSelectionScreen';
+import StudentIdSelectionScreen from './screens/StudentIdSelectionScreen';
+import NotificationSettingsScreen from './screens/NotificationSettingsScreen';
+import KeywordSettingsScreen from './screens/KeywordSettingsScreen';
+import DeleteAccountScreen from './screens/DeleteAccountScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -32,6 +38,12 @@ export type RootStackParamList = {
   Alert: undefined;
   Scrap: undefined;
   Chatbot: undefined;
+  MyInfo: undefined;
+  DepartmentSelection: { onSelect?: (department: string) => void } | undefined;
+  StudentIdSelection: { onSelect?: (studentId: string) => void } | undefined;
+  NotificationSettings: undefined;
+  KeywordSettings: undefined;
+  DeleteAccount: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -60,6 +72,12 @@ function AppContent() {
             <Stack.Screen name="Alert" component={AlertScreen} />
             <Stack.Screen name="Scrap" component={ScrapScreen} />
             <Stack.Screen name="Chatbot" component={ChatbotScreen} />
+            <Stack.Screen name="MyInfo" component={MyInfoScreen} />
+            <Stack.Screen name="DepartmentSelection" component={DepartmentSelectionScreen} />
+            <Stack.Screen name="StudentIdSelection" component={StudentIdSelectionScreen} />
+            <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
+            <Stack.Screen name="KeywordSettings" component={KeywordSettingsScreen} />
+            <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
           </Stack.Group>
           <Stack.Group screenOptions={{ presentation: 'modal' }}>
             <Stack.Screen name="Setting" component={SettingScreen} />

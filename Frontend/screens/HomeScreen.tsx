@@ -58,7 +58,6 @@ export default function HomeScreen() {
       <MainContents
         category={selectedCategory}
         onCategoriesExtracted={setAvailableCategories}
-      }
       />
       <BottomBar onTabPress={handleTabPress} activeTab={0} />
     </View>
