@@ -26,10 +26,24 @@ export default function Setting() {
         const token = await AsyncStorage.getItem("authToken");
         if (token) {
           const response = await getMyInfo(token);
+          console.log("API 응답:", response);
           if (response.success && response.data) {
-            setUserName(response.data.name || "김민지");
-            setUserEmail(response.data.email || "1234abcd@inu.ac.kr");
-            setUserMajor(response.data.department?.name || "컴퓨터공학부 25학번");
+            const userData = response.data;
+            setUserName(userData.name || "이름 없음");
+            setUserEmail(userData.email || "이메일 없음");
+
+            // 학과와 학번 조합
+            const deptName = userData.department?.name || "";
+            const studentId = userData.studentId || "";
+            if (deptName && studentId) {
+              setUserMajor(`${deptName} ${studentId}`);
+            } else if (deptName) {
+              setUserMajor(deptName);
+            } else if (studentId) {
+              setUserMajor(studentId);
+            } else {
+              setUserMajor("정보 없음");
+            }
           }
         }
       } catch (error) {

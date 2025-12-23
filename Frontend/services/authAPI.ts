@@ -184,21 +184,29 @@ export const registerUserToBackend = async (
   studentId: string,
   email: string,
   password: string,
-  department: string = "미지정"
+  departmentName: string = "미지정"
 ) => {
   try {
+    const requestBody = {
+      studentId,
+      email,
+      password,
+      name,
+      departmentName,
+    };
+
+    console.log("========== 백엔드 회원가입 API 호출 ==========");
+    console.log("요청 URL:", `${BACKEND_URL}/api/auth/signup`);
+    console.log("요청 데이터:", requestBody);
+    console.log("JSON 문자열:", JSON.stringify(requestBody, null, 2));
+    console.log("==============================================");
+
     const response = await fetch(`${BACKEND_URL}/api/auth/signup`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        name,
-        studentId,
-        email,
-        password,
-        department,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const data = await response.json();

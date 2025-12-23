@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSignup } from "../../context/SignupContext";
 
 type RootStackParamList = {
   Login: undefined;
@@ -23,6 +24,7 @@ type RootStackParamList = {
   Alert: undefined;
   Scrap: undefined;
   DepartmentSelection: { onSelect?: (department: string) => void } | undefined;
+  StudentIdSelection: { onSelect?: (studentId: string) => void } | undefined;
 };
 
 type EnterEmailScreenNavigationProp = NativeStackNavigationProp<
@@ -33,14 +35,27 @@ type EnterEmailScreenNavigationProp = NativeStackNavigationProp<
 export default function EnterEmail() {
   const navigation = useNavigation<EnterEmailScreenNavigationProp>();
   const { width } = Dimensions.get("window");
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [studentId, setStudentId] = useState("");
-  const [department, setDepartment] = useState("");
+  const { signupData, setName: setContextName, setEmail: setContextEmail, setStudentId: setContextStudentId, setDepartment: setContextDepartment } = useSignup();
+
+  // 로컬 상태는 입력 필드용으로 유지하되, Context와 동기화
+  const [email, setEmail] = useState(signupData.email);
+  const [name, setName] = useState(signupData.name);
+  const [studentId, setStudentId] = useState(signupData.studentId);
+  const [department, setDepartment] = useState(signupData.department);
   const [nameError, setNameError] = useState("");
   const [studentIdError, setStudentIdError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [departmentError, setDepartmentError] = useState("");
+
+  // Context에서 값이 변경되면 로컬 상태도 업데이트
+  React.useEffect(() => {
+    if (signupData.studentId && signupData.studentId !== studentId) {
+      setStudentId(signupData.studentId);
+    }
+    if (signupData.department && signupData.department !== department) {
+      setDepartment(signupData.department);
+    }
+  }, [signupData.studentId, signupData.department]);
 
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
@@ -64,7 +79,7 @@ export default function EnterEmail() {
 
   const validateStudentId = (text: string) => {
     if (!text) {
-      setStudentIdError("학번을 입력해주세요.");
+      setStudentIdError("학번을 선택해주세요.");
       return false;
     }
     setStudentIdError("");
@@ -72,12 +87,7 @@ export default function EnterEmail() {
   };
 
   const validateEmail = (text: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!text || !emailRegex.test(text)) {
-      setEmailError("유효한 이메일 주소를 입력해주세요.");
-      return false;
-    }
-    if (!text.endsWith("@inu.ac.kr")) {
+    if (!text || !text.endsWith("@inu.ac.kr")) {
       setEmailError("학교 이메일(@inu.ac.kr)을 사용해주세요.");
       return false;
     }
@@ -104,8 +114,16 @@ export default function EnterEmail() {
       return;
     }
 
-    // 데이터를 다음 화면으로 전달
-    navigation.navigate("EnterPw", { email, name, studentId, department });
+    // Context에 데이터 저장
+    setContextName(name);
+    setContextEmail(email);
+    setContextStudentId(studentId);
+    setContextDepartment(department);
+
+    console.log("회원가입 데이터 Context에 저장:", { name, email, studentId, department });
+
+    // 다음 화면으로 이동 (params 없이)
+    navigation.navigate("EnterPw");
   };
 
   return (
@@ -190,7 +208,7 @@ export default function EnterEmail() {
         ) : null}
       </View>
 
-      {/* 학번 입력칸 */}
+      {/* 학번 선택 */}
       <View style={{ marginBottom: 15 }}>
         <Text
           style={{
@@ -202,26 +220,35 @@ export default function EnterEmail() {
         >
           학번
         </Text>
-        <TextInput
+        <TouchableOpacity
           style={{
-            fontFamily: "Pretendard-Regular",
-            fontSize: 16,
             borderWidth: 1,
             borderColor: studentIdError ? "red" : "#DDDDDD",
             borderRadius: 10,
             paddingHorizontal: 15,
             paddingVertical: 12,
             backgroundColor: "#FAFAFA",
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
-          placeholder="학번을 입력하세요"
-          placeholderTextColor="#AAAAAA"
-          value={studentId}
-          onChangeText={(text) => {
-            setStudentId(text);
-            validateStudentId(text);
+          onPress={() => {
+            // Navigate to student ID selection (context 사용)
+            console.log("학번 선택 화면으로 이동");
+            navigation.navigate("StudentIdSelection", { fromSignup: true });
           }}
-          keyboardType="number-pad"
-        />
+        >
+          <Text
+            style={{
+              fontFamily: "Pretendard-Regular",
+              fontSize: 16,
+              color: studentId ? "#000000" : "#AAAAAA",
+            }}
+          >
+            {studentId || "학번을 선택하세요"}
+          </Text>
+          <Text style={{ fontSize: 20, color: "#666" }}>›</Text>
+        </TouchableOpacity>
         {studentIdError ? (
           <Text style={{ color: "red", marginTop: 5 }}>{studentIdError}</Text>
         ) : null}
@@ -252,13 +279,9 @@ export default function EnterEmail() {
             alignItems: "center",
           }}
           onPress={() => {
-            // Navigate to department selection and handle result
-            navigation.navigate("DepartmentSelection", {
-              onSelect: (selectedDept: string) => {
-                setDepartment(selectedDept);
-                validateDepartment(selectedDept);
-              }
-            });
+            // Navigate to department selection (context 사용)
+            console.log("학과 선택 화면으로 이동");
+            navigation.navigate("DepartmentSelection", { fromSignup: true });
           }}
         >
           <Text
@@ -341,7 +364,7 @@ export default function EnterEmail() {
       <Text
         style={{
           fontFamily: "Pretendard-Regular",
-          fontSize: 18,
+          fontSize: Math.min(width * 0.04, 16),
           color: "#AAAAAA",
           textAlign: "center",
           position: "absolute",
@@ -356,7 +379,7 @@ export default function EnterEmail() {
       <Text
         style={{
           fontFamily: "Pretendard-Regular",
-          fontSize: 16,
+          fontSize: Math.min(width * 0.035, 14),
           color: "#AAAAAA",
           textAlign: "center",
           position: "absolute",

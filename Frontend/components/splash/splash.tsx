@@ -94,7 +94,7 @@ export default function Splash() {
       <Text
         style={{
           fontFamily: "Pretendard-Regular",
-          fontSize: 18,
+          fontSize: Math.min(width * 0.04, 16),
           color: "#666666",
           textAlign: "center",
           position: "absolute",
@@ -108,7 +108,7 @@ export default function Splash() {
       <Text
         style={{
           fontFamily: "Pretendard-Regular",
-          fontSize: 16,
+          fontSize: Math.min(width * 0.035, 14),
           color: "#666666",
           textAlign: "center",
           position: "absolute",

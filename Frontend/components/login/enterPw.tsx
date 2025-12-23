@@ -1,4 +1,4 @@
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useFonts } from "expo-font";
 import React, { useState } from "react";
@@ -7,12 +7,15 @@ import {
   Alert,
   Dimensions,
   Image,
+  Modal,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { registerUserToBackend, signUpWithEmail } from "../../services/authAPI";
+import { TokenService } from "../../services/tokenService";
+import { useSignup } from "../../context/SignupContext";
 
 type RootStackParamList = {
   Login: undefined;
@@ -31,18 +34,19 @@ type EnterPwScreenNavigationProp = NativeStackNavigationProp<
   "EnterPw"
 >;
 
-type EnterPwScreenRouteProp = RouteProp<RootStackParamList, "EnterPw">;
-
 export default function EnterPw() {
   const navigation = useNavigation<EnterPwScreenNavigationProp>();
-  const route = useRoute<EnterPwScreenRouteProp>();
-  const { email, name, studentId, department } = route.params;
+  const { signupData, clearSignupData } = useSignup();
+  const { email, name, studentId, department } = signupData;
   const { width } = Dimensions.get("window");
+
+  console.log("EnterPw - Context에서 읽은 데이터:", signupData);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
@@ -120,6 +124,12 @@ export default function EnterPw() {
       console.log("Firebase 회원가입 성공:", firebaseResult.user);
 
       // 2. Backend API 호출 - DB에 사용자 정보 저장
+      console.log("=== 회원가입 데이터 확인 (Context) ===");
+      console.log("name:", name);
+      console.log("studentId:", studentId);
+      console.log("email:", email);
+      console.log("department:", department);
+
       const backendResult = await registerUserToBackend(
         name,
         studentId,
@@ -135,8 +145,17 @@ export default function EnterPw() {
         console.log("Backend 회원가입 성공:", backendResult.data);
       }
 
-      // 회원가입 완료 후 로그인 페이지로 자동 이동
-      navigation.navigate("Login");
+      // 회원가입한 사용자 정보 저장 (로그인 전에도 내 정보에서 확인 가능하도록)
+      await TokenService.saveUserInfo({
+        name,
+        email,
+        studentId,
+        department,
+      });
+      console.log("사용자 정보 저장 완료");
+
+      // 회원가입 완료 모달 표시
+      setShowSuccessModal(true);
     } catch (error) {
       console.error("회원가입 오류:", error);
       Alert.alert("오류", "회원가입 중 오류가 발생했습니다.");
@@ -293,7 +312,7 @@ export default function EnterPw() {
       <Text
         style={{
           fontFamily: "Pretendard-Regular",
-          fontSize: 18,
+          fontSize: Math.min(width * 0.04, 16),
           color: "#AAAAAA",
           textAlign: "center",
           position: "absolute",
@@ -308,7 +327,7 @@ export default function EnterPw() {
       <Text
         style={{
           fontFamily: "Pretendard-Regular",
-          fontSize: 16,
+          fontSize: Math.min(width * 0.035, 14),
           color: "#AAAAAA",
           textAlign: "center",
           position: "absolute",
@@ -319,6 +338,75 @@ export default function EnterPw() {
       >
         ⓒ DAON
       </Text>
+
+      {/* 회원가입 완료 모달 */}
+      <Modal
+        visible={showSuccessModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setShowSuccessModal(false);
+          navigation.navigate("Login");
+        }}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "white",
+              borderRadius: 16,
+              padding: 30,
+              alignItems: "center",
+              marginHorizontal: 40,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 4,
+              elevation: 5,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "Pretendard-Bold",
+                fontSize: 18,
+                color: "#333333",
+                marginBottom: 20,
+                textAlign: "center",
+              }}
+            >
+              회원가입이 완료되었습니다!
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setShowSuccessModal(false);
+                navigation.navigate("Login");
+              }}
+              style={{
+                backgroundColor: "#3366FF",
+                borderRadius: 8,
+                paddingVertical: 12,
+                paddingHorizontal: 40,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Pretendard-SemiBold",
+                  fontSize: 16,
+                  color: "#FFFFFF",
+                }}
+              >
+                확인
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

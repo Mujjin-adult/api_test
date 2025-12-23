@@ -1,15 +1,28 @@
 import { useFonts } from "expo-font";
 import React from "react";
-import { Image, Text, View } from "react-native";
+import { Image, Text, View, TouchableOpacity } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../../App";
 
-export default function EmptyScrap() {
+interface EmptyScrapProps {
+  type: "관심 공지" | "스크랩 공지";
+}
+
+type EmptyScrapNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+export default function EmptyScrap({ type }: EmptyScrapProps) {
+  const navigation = useNavigation<EmptyScrapNavigationProp>();
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
     "Pretendard-ExtraBold": require("../../assets/fonts/Pretendard-ExtraBold.ttf"),
     "Pretendard-ExtraLight": require("../../assets/fonts/Pretendard-ExtraLight.ttf"),
     "Pretendard-Light": require("../../assets/fonts/Pretendard-Light.ttf"),
     "Pretendard-Regular": require("../../assets/fonts/Pretendard-Regular.ttf"),
+    "Pretendard-SemiBold": require("../../assets/fonts/Pretendard-SemiBold.ttf"),
   });
+
+  const isInterest = type === "관심 공지";
 
   return (
     <View
@@ -26,36 +39,63 @@ export default function EmptyScrap() {
       <Text
         style={{
           fontFamily: "Pretendard-Bold",
-          fontSize: 25,
+          fontSize: 20,
           marginLeft: 50,
           marginRight: 50,
-          marginBottom: 15,
+          marginBottom: 12,
+          textAlign: "center",
         }}
       >
-        저장한 공지가 없습니다
+        {isInterest ? "알림이 온 공지가 없습니다" : "저장한 공지가 없습니다"}
       </Text>
       <Text
         style={{
           fontFamily: "Pretendard-Regular",
-          fontSize: 20,
+          fontSize: 15,
           marginLeft: 50,
           marginRight: 50,
-          marginBottom: 5,
+          marginBottom: 4,
+          textAlign: "center",
+          color: "#666",
         }}
       >
-        관심 있는 공지를 스크랩하여
+        {isInterest ? "관심있는 키워드를 알림 설정하여" : "관심 있는 공지를 스크랩하여"}
       </Text>
       <Text
         style={{
           fontFamily: "Pretendard-Regular",
-          fontSize: 20,
+          fontSize: 15,
           marginLeft: 50,
           marginRight: 50,
-          marginBottom: 150,
+          marginBottom: isInterest ? 20 : 150,
+          textAlign: "center",
+          color: "#666",
         }}
       >
         언제든지 공지를 편하게 열람하세요!
       </Text>
+      {isInterest && (
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#3366FF",
+            paddingVertical: 12,
+            paddingHorizontal: 24,
+            borderRadius: 8,
+            marginBottom: 130,
+          }}
+          onPress={() => navigation.navigate("KeywordSettings")}
+        >
+          <Text
+            style={{
+              fontFamily: "Pretendard-SemiBold",
+              fontSize: 16,
+              color: "#fff",
+            }}
+          >
+            키워드 설정하기
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

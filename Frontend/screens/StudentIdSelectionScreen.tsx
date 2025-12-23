@@ -6,6 +6,8 @@ import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../App";
 import { useFonts } from "expo-font";
 import Header from "@/components/topmenu/header";
+import BottomBar from "@/components/bottombar/bottombar";
+import { useSignup } from "@/context/SignupContext";
 
 type StudentIdSelectionNavigationProp = NativeStackNavigationProp<RootStackParamList, "StudentIdSelection">;
 type StudentIdSelectionRouteProp = RouteProp<RootStackParamList, "StudentIdSelection">;
@@ -13,7 +15,30 @@ type StudentIdSelectionRouteProp = RouteProp<RootStackParamList, "StudentIdSelec
 export default function StudentIdSelectionScreen() {
   const navigation = useNavigation<StudentIdSelectionNavigationProp>();
   const route = useRoute<StudentIdSelectionRouteProp>();
+  const { setStudentId: setContextStudentId } = useSignup();
   const [selectedYear, setSelectedYear] = useState<number | null>(25);
+  const [activeTab, setActiveTab] = useState<number>(4);
+
+  const handleTabPress = (index: number) => {
+    setActiveTab(index);
+    switch (index) {
+      case 0:
+        navigation.navigate('Home');
+        break;
+      case 1:
+        navigation.navigate('Scrap');
+        break;
+      case 2:
+        navigation.navigate('Chatbot');
+        break;
+      case 3:
+        navigation.navigate('Search');
+        break;
+      case 4:
+        navigation.navigate('Setting');
+        break;
+    }
+  };
 
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../assets/fonts/Pretendard-Bold.ttf"),
@@ -30,10 +55,19 @@ export default function StudentIdSelectionScreen() {
   };
 
   const handleSave = () => {
-    if (selectedYear && route.params?.onSelect) {
-      route.params.onSelect(`${selectedYear}학번`);
+    if (selectedYear) {
+      const studentIdStr = `${selectedYear}학번`;
+      console.log("학번 선택됨:", studentIdStr);
+
+      // Context에 학번 저장 (회원가입 플로우용)
+      setContextStudentId(studentIdStr);
+      console.log("Context에 학번 저장 완료:", studentIdStr);
+
+      // 기존 콜백도 지원 (다른 화면에서 사용할 경우)
+      if (route.params?.onSelect) {
+        route.params.onSelect(studentIdStr);
+      }
     }
-    // TODO: Save selected student year to user profile if not in signup flow
     navigation.goBack();
   };
 
@@ -47,7 +81,7 @@ export default function StudentIdSelectionScreen() {
       <Header showBackButton={true} onBackPress={handleBackPress} />
 
       <View style={styles.content}>
-        <Text style={styles.title}>학번 변경</Text>
+        <Text style={styles.title}>학번 선택</Text>
 
         {/* Year Grid */}
         <View style={styles.yearGrid}>
@@ -77,6 +111,8 @@ export default function StudentIdSelectionScreen() {
           <Text style={styles.saveButtonText}>저장하기</Text>
         </TouchableOpacity>
       </View>
+
+      <BottomBar onTabPress={handleTabPress} activeTab={4} />
     </View>
   );
 }
@@ -100,12 +136,13 @@ const styles = StyleSheet.create({
   yearGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
+    justifyContent: "center",
     gap: 10,
     marginBottom: 40,
   },
   yearButton: {
-    width: "30%",
-    paddingVertical: 12,
+    width: "28%",
+    paddingVertical: 14,
     backgroundColor: "#F5F5F5",
     borderRadius: 8,
     borderWidth: 1,

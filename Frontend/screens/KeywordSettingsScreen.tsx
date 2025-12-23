@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../App";
 import { useFonts } from "expo-font";
 import Header from "@/components/topmenu/header";
+import BottomBar from "@/components/bottombar/bottombar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getKeywords, createKeyword, deleteKeyword, toggleKeyword, Keyword } from "../services/keywordAPI";
 
@@ -14,6 +15,28 @@ export default function KeywordSettingsScreen() {
   const navigation = useNavigation<KeywordSettingsNavigationProp>();
   const [keyword, setKeyword] = useState("");
   const [keywords, setKeywords] = useState<Keyword[]>([]);
+  const [activeTab, setActiveTab] = useState<number>(4);
+
+  const handleTabPress = (index: number) => {
+    setActiveTab(index);
+    switch (index) {
+      case 0:
+        navigation.navigate('Home');
+        break;
+      case 1:
+        navigation.navigate('Scrap');
+        break;
+      case 2:
+        navigation.navigate('Chatbot');
+        break;
+      case 3:
+        navigation.navigate('Search');
+        break;
+      case 4:
+        navigation.navigate('Setting');
+        break;
+    }
+  };
 
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../assets/fonts/Pretendard-Bold.ttf"),
@@ -115,7 +138,7 @@ export default function KeywordSettingsScreen() {
       <Header showBackButton={true} onBackPress={handleBackPress} />
 
       <View style={styles.content}>
-        <Text style={styles.title}>키워드 설정</Text>
+        <Text style={styles.title}>알림 키워드 설정</Text>
 
         <View style={styles.inputContainer}>
           <TextInput
@@ -133,8 +156,7 @@ export default function KeywordSettingsScreen() {
         </View>
 
         <View style={styles.infoContainer}>
-          <Text style={styles.infoText}>• 최대 10개까지 등록 가능합니다</Text>
-          <Text style={styles.infoText}>• 등록된 키워드가 포함된 공지사항을 알림으로 받습니다</Text>
+          <Text style={styles.infoText}>• 등록된 키워드가 포함된 공지사항을 푸시 알림으로 받습니다</Text>
         </View>
 
         <View style={styles.keywordHeader}>
@@ -170,6 +192,8 @@ export default function KeywordSettingsScreen() {
           )}
         </ScrollView>
       </View>
+
+      <BottomBar onTabPress={handleTabPress} activeTab={4} />
     </View>
   );
 }
@@ -193,6 +217,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     marginBottom: 15,
+    width: "100%",
   },
   input: {
     flex: 1,
@@ -205,13 +230,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E0E0E0",
     marginRight: 10,
+    minWidth: 0, // flex item이 줄어들 수 있도록
   },
   addButton: {
     backgroundColor: "#3478F6",
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
+    flexShrink: 0, // 버튼 크기 유지
   },
   addButtonText: {
     fontFamily: "Pretendard-SemiBold",

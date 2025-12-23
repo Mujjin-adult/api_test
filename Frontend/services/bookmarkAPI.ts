@@ -23,7 +23,7 @@ export async function createBookmark(noticeId: number, token: string): Promise<A
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ keyword: String(noticeId) }),
+    body: JSON.stringify({ noticeId }),
   });
 
   if (!response.ok) {

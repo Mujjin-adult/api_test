@@ -4,10 +4,12 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../App";
 import { useBookmark } from "../context/BookmarkContext";
+import { useNotification } from "../context/NotificationContext";
 
 // 메인 콘텐츠
 import EmptyScrap from "@/components/maincontents/emptyScrap";
 import ScrapList from "@/components/maincontents/scrapList";
+import InterestList from "@/components/maincontents/interestList";
 
 // 상단 탭바
 import Header from "@/components/topmenu/header";
@@ -17,11 +19,14 @@ import Scrap from "@/components/topmenu/scrap";
 import BottomBar from "@/components/bottombar/bottombar";
 
 type ScrapScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Scrap'>;
+type ScrapTab = "관심 공지" | "스크랩 공지";
 
 export default function ScrapScreen() {
   const navigation = useNavigation<ScrapScreenNavigationProp>();
   const [activeTab, setActiveTab] = useState<number>(1); // 관심공지 탭 활성화
+  const [selectedScrapTab, setSelectedScrapTab] = useState<ScrapTab>("관심 공지");
   const { bookmarkedNotices } = useBookmark();
+  const { notificationNotices } = useNotification();
 
   const handleTabPress = (index: number) => {
     setActiveTab(index);
@@ -45,11 +50,27 @@ export default function ScrapScreen() {
     }
   };
 
+  const renderContent = () => {
+    if (selectedScrapTab === "관심 공지") {
+      return notificationNotices.length > 0 ? (
+        <InterestList />
+      ) : (
+        <EmptyScrap type="관심 공지" />
+      );
+    } else {
+      return bookmarkedNotices.length > 0 ? (
+        <ScrapList />
+      ) : (
+        <EmptyScrap type="스크랩 공지" />
+      );
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Header />
-      <Scrap />
-      {bookmarkedNotices.length > 0 ? <ScrapList /> : <EmptyScrap />}
+      <Scrap selectedTab={selectedScrapTab} onTabChange={setSelectedScrapTab} />
+      {renderContent()}
       <BottomBar onTabPress={handleTabPress} activeTab={1} />
     </View>
   );
