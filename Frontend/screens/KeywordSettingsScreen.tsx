@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from "react-native";
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Switch } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../App";
 import { useFonts } from "expo-font";
 import Header from "@/components/topmenu/header";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { updateUserKeywords } from "../services/userAPI";
+import { getKeywords, createKeyword, deleteKeyword, toggleKeyword, Keyword } from "../services/keywordAPI";
 
 type KeywordSettingsNavigationProp = NativeStackNavigationProp<RootStackParamList, "KeywordSettings">;
 
 export default function KeywordSettingsScreen() {
   const navigation = useNavigation<KeywordSettingsNavigationProp>();
   const [keyword, setKeyword] = useState("");
-  const [keywords, setKeywords] = useState<string[]>([]);
+  const [keywords, setKeywords] = useState<Keyword[]>([]);
 
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../assets/fonts/Pretendard-Bold.ttf"),
@@ -30,10 +30,10 @@ export default function KeywordSettingsScreen() {
       const token = await AsyncStorage.getItem("authToken");
       if (!token) return;
 
-      // TODO: API에서 키워드 가져오기
-      const saved = await AsyncStorage.getItem("userKeywords");
-      if (saved) {
-        setKeywords(JSON.parse(saved));
+      const response = await getKeywords(token);
+      if (response.success && response.data) {
+        setKeywords(response.data);
+        await AsyncStorage.setItem("userKeywords", JSON.stringify(response.data.map(k => k.keyword)));
       }
     } catch (error) {
       console.error("키워드 불러오기 오류:", error);
@@ -44,13 +44,13 @@ export default function KeywordSettingsScreen() {
     navigation.goBack();
   };
 
-  const handleAddKeyword = () => {
+  const handleAddKeyword = async () => {
     if (!keyword.trim()) {
       Alert.alert("알림", "키워드를 입력해주세요.");
       return;
     }
 
-    if (keywords.includes(keyword.trim())) {
+    if (keywords.some(k => k.keyword === keyword.trim())) {
       Alert.alert("알림", "이미 등록된 키워드입니다.");
       return;
     }
@@ -60,19 +60,6 @@ export default function KeywordSettingsScreen() {
       return;
     }
 
-    const newKeywords = [...keywords, keyword.trim()];
-    setKeywords(newKeywords);
-    setKeyword("");
-    saveKeywords(newKeywords);
-  };
-
-  const handleRemoveKeyword = (keywordToRemove: string) => {
-    const newKeywords = keywords.filter((k) => k !== keywordToRemove);
-    setKeywords(newKeywords);
-    saveKeywords(newKeywords);
-  };
-
-  const saveKeywords = async (keywordList: string[]) => {
     try {
       const token = await AsyncStorage.getItem("authToken");
       if (!token) {
@@ -80,17 +67,44 @@ export default function KeywordSettingsScreen() {
         return;
       }
 
-      // 로컬 저장
-      await AsyncStorage.setItem("userKeywords", JSON.stringify(keywordList));
-
-      // 백엔드 저장
-      const response = await updateUserKeywords(keywordList, token);
-      if (!response.success) {
-        Alert.alert("오류", "키워드 저장에 실패했습니다.");
+      const response = await createKeyword(keyword.trim(), token);
+      if (response.success && response.data) {
+        setKeywords([...keywords, response.data]);
+        setKeyword("");
+        await AsyncStorage.setItem("userKeywords", JSON.stringify([...keywords, response.data].map(k => k.keyword)));
       }
     } catch (error) {
-      console.error("키워드 저장 오류:", error);
-      Alert.alert("오류", "키워드 저장 중 오류가 발생했습니다.");
+      console.error("키워드 추가 오류:", error);
+      Alert.alert("오류", "키워드 추가에 실패했습니다.");
+    }
+  };
+
+  const handleRemoveKeyword = async (kw: Keyword) => {
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      if (!token) return;
+
+      await deleteKeyword(kw.id, token);
+      const newKeywords = keywords.filter((k) => k.id !== kw.id);
+      setKeywords(newKeywords);
+      await AsyncStorage.setItem("userKeywords", JSON.stringify(newKeywords.map(k => k.keyword)));
+    } catch (error) {
+      console.error("키워드 삭제 오류:", error);
+      Alert.alert("오류", "키워드 삭제에 실패했습니다.");
+    }
+  };
+
+  const handleToggleKeyword = async (kw: Keyword) => {
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      if (!token) return;
+
+      const response = await toggleKeyword(kw.id, token);
+      if (response.success && response.data) {
+        setKeywords(keywords.map(k => k.id === kw.id ? response.data : k));
+      }
+    } catch (error) {
+      console.error("키워드 토글 오류:", error);
     }
   };
 
@@ -133,15 +147,24 @@ export default function KeywordSettingsScreen() {
               <Text style={styles.emptyText}>등록된 키워드가 없습니다</Text>
             </View>
           ) : (
-            keywords.map((kw, index) => (
-              <View key={index} style={styles.keywordItem}>
-                <Text style={styles.keywordText}>{kw}</Text>
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={() => handleRemoveKeyword(kw)}
-                >
-                  <Text style={styles.removeButtonText}>×</Text>
-                </TouchableOpacity>
+            keywords.map((kw) => (
+              <View key={kw.id} style={styles.keywordItem}>
+                <Text style={[styles.keywordText, !kw.isActive && styles.keywordTextInactive]}>{kw.keyword}</Text>
+                <View style={styles.keywordActions}>
+                  <Switch
+                    value={kw.isActive}
+                    onValueChange={() => handleToggleKeyword(kw)}
+                    trackColor={{ false: "#E0E0E0", true: "#A3C3FF" }}
+                    thumbColor={kw.isActive ? "#3478F6" : "#f4f3f4"}
+                    style={{ marginRight: 10 }}
+                  />
+                  <TouchableOpacity
+                    style={styles.removeButton}
+                    onPress={() => handleRemoveKeyword(kw)}
+                  >
+                    <Text style={styles.removeButtonText}>×</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ))
           )}
@@ -244,6 +267,14 @@ const styles = StyleSheet.create({
     fontFamily: "Pretendard-Regular",
     fontSize: 15,
     color: "#000",
+    flex: 1,
+  },
+  keywordTextInactive: {
+    color: "#999",
+  },
+  keywordActions: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   removeButton: {
     width: 28,

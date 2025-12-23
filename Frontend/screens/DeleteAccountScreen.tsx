@@ -7,7 +7,7 @@ import { useFonts } from "expo-font";
 import Header from "@/components/topmenu/header";
 import { TokenService } from "../services/tokenService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getAuth, deleteUser } from "firebase/auth";
+import { deleteAccount } from "../services/userSettingsAPI";
 
 type DeleteAccountNavigationProp = NativeStackNavigationProp<RootStackParamList, "DeleteAccount">;
 
@@ -27,42 +27,36 @@ export default function DeleteAccountScreen() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!id || !password) {
-      if (window.confirm) {
-        window.alert("ID와 비밀번호를 입력해주세요.");
-      }
+    if (!password) {
+      window.alert("비밀번호를 입력해주세요.");
       return;
     }
 
     if (window.confirm("정말로 회원을 탈퇴하시겠습니까?\n\n회원 탈퇴시 등록 계정으로\n회원 거래이 제한됩니다.")) {
       try {
-        const auth = getAuth();
-        const user = auth.currentUser;
-
-        if (user) {
-          await deleteUser(user);
+        const token = await AsyncStorage.getItem("authToken");
+        if (!token) {
+          window.alert("로그인이 필요합니다.");
+          return;
         }
 
-        await TokenService.clearAll();
-        await AsyncStorage.removeItem("fcmToken");
+        const response = await deleteAccount(password, token);
+        if (response.success) {
+          await TokenService.clearAll();
+          await AsyncStorage.removeItem("fcmToken");
 
-        (navigation as any).reset({
-          index: 0,
-          routes: [{ name: "Login" }],
-        });
+          (navigation as any).reset({
+            index: 0,
+            routes: [{ name: "Login" }],
+          });
 
-        if (window.alert) {
           window.alert("회원이 정상적으로 탈퇴되었습니다.");
+        } else {
+          window.alert(response.message || "회원 탈퇴에 실패했습니다.");
         }
       } catch (error: any) {
         console.error("회원 탈퇴 오류:", error);
-        if (window.alert) {
-          window.alert(
-            error.code === "auth/requires-recent-login"
-              ? "보안을 위해 다시 로그인 후 탈퇴해주세요."
-              : "회원 탈퇴 중 문제가 발생했습니다."
-          );
-        }
+        window.alert("회원 탈퇴 중 문제가 발생했습니다.");
       }
     }
   };

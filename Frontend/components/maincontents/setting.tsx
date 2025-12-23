@@ -4,7 +4,7 @@ import { Image, ScrollView, Text, TouchableOpacity, View, Alert } from "react-na
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { TokenService } from "../../services/tokenService";
-import { getAuth, deleteUser } from "firebase/auth";
+import { logout, getMyInfo } from "../../services/userSettingsAPI";
 
 export default function Setting() {
   const navigation = useNavigation();
@@ -23,11 +23,14 @@ export default function Setting() {
   useEffect(() => {
     const loadUserInfo = async () => {
       try {
-        const userInfo = await TokenService.getUserInfo();
-        if (userInfo) {
-          setUserName(userInfo.name || "김민지");
-          setUserEmail(userInfo.email || "1234abcd@inu.ac.kr");
-          setUserMajor(userInfo.department || "컴퓨터공학부 25학번");
+        const token = await AsyncStorage.getItem("authToken");
+        if (token) {
+          const response = await getMyInfo(token);
+          if (response.success && response.data) {
+            setUserName(response.data.name || "김민지");
+            setUserEmail(response.data.email || "1234abcd@inu.ac.kr");
+            setUserMajor(response.data.department?.name || "컴퓨터공학부 25학번");
+          }
         }
       } catch (error) {
         console.error("사용자 정보 로드 오류:", error);
@@ -49,8 +52,16 @@ export default function Setting() {
 
   const subArrays = [accont, appSetting, guide, plus];
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (window.confirm("로그아웃 하시겠습니까?")) {
+      try {
+        const token = await AsyncStorage.getItem("authToken");
+        if (token) {
+          await logout(token);
+        }
+      } catch (error) {
+        console.error("로그아웃 API 오류:", error);
+      }
       TokenService.clearAll();
       AsyncStorage.removeItem("fcmToken");
       (navigation as any).reset({

@@ -6,6 +6,7 @@ import type { RootStackParamList } from "../App";
 import { useFonts } from "expo-font";
 import Header from "@/components/topmenu/header";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { updateSettings, getMyInfo } from "../services/userSettingsAPI";
 
 type NotificationSettingsNavigationProp = NativeStackNavigationProp<RootStackParamList, "NotificationSettings">;
 
@@ -27,10 +28,14 @@ export default function NotificationSettingsScreen() {
 
   const loadSettings = async () => {
     try {
-      const keyword = await AsyncStorage.getItem("keywordNotifications");
+      const token = await AsyncStorage.getItem("authToken");
+      if (token) {
+        const response = await getMyInfo(token);
+        if (response.success && response.data) {
+          setKeywordNotifications(response.data.systemNotificationEnabled);
+        }
+      }
       const news = await AsyncStorage.getItem("newsAndBenefits");
-
-      if (keyword !== null) setKeywordNotifications(keyword === "true");
       if (news !== null) setNewsAndBenefits(news === "true");
     } catch (error) {
       console.error("설정 불러오기 오류:", error);
@@ -47,7 +52,10 @@ export default function NotificationSettingsScreen() {
     } else {
       setKeywordNotifications(value);
       try {
-        await AsyncStorage.setItem("keywordNotifications", value.toString());
+        const token = await AsyncStorage.getItem("authToken");
+        if (token) {
+          await updateSettings(false, token);
+        }
       } catch (error) {
         console.error("설정 저장 오류:", error);
       }
@@ -59,7 +67,10 @@ export default function NotificationSettingsScreen() {
     if (consent) {
       setKeywordNotifications(true);
       try {
-        await AsyncStorage.setItem("keywordNotifications", "true");
+        const token = await AsyncStorage.getItem("authToken");
+        if (token) {
+          await updateSettings(true, token);
+        }
       } catch (error) {
         console.error("설정 저장 오류:", error);
       }
