@@ -3,20 +3,13 @@ import { StyleSheet, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../App";
-
-// 메인 콘텐츠
-import Setting from "@/components/maincontents/setting";
-
-// 상단 탭바
 import Header from "@/components/topmenu/header";
+import MyInfo from "@/components/maincontents/myinfo";
 
-type SettingScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "Setting"
->;
+type MyInfoScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, "MyInfo">;
 
-export default function SettingScreen() {
-  const navigation = useNavigation<SettingScreenNavigationProp>();
+export default function MyInfoScreen() {
+  const navigation = useNavigation<MyInfoScreenNavigationProp>();
 
   const handleBackPress = () => {
     navigation.goBack();
@@ -25,7 +18,7 @@ export default function SettingScreen() {
   return (
     <View style={styles.container}>
       <Header showBackButton={true} onBackPress={handleBackPress} />
-      <Setting />
+      <MyInfo />
     </View>
   );
 }

@@ -2,6 +2,7 @@ import { useFonts } from "expo-font";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useNotification } from "../../context/NotificationContext";
 
 type RootStackParamList = {
   Alert: undefined;
@@ -10,18 +11,16 @@ type RootStackParamList = {
 
 interface HeaderProps {
   showBackButton?: boolean;
-  onAlertToggle?: () => void;
   onBackPress?: () => void;
-  isAlertOpen?: boolean;
 }
 
 export default function Header({
   showBackButton = false,
-  onAlertToggle,
   onBackPress,
-  isAlertOpen = false,
 }: HeaderProps) {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { isAlertOpen, toggleAlert } = useNotification();
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
     "Pretendard-ExtraBold": require("../../assets/fonts/Pretendard-ExtraBold.ttf"),
@@ -29,12 +28,6 @@ export default function Header({
     "Pretendard-Light": require("../../assets/fonts/Pretendard-Light.ttf"),
     "Pretendard-Regular": require("../../assets/fonts/Pretendard-Regular.ttf"),
   });
-
-  const handleBellClick = () => {
-    if (onAlertToggle) {
-      onAlertToggle();
-    }
-  };
 
   if (!fontsLoaded) return null;
 
@@ -87,7 +80,7 @@ export default function Header({
             <View style={{ width: 40 }} />
           )}
           <TouchableOpacity
-            onPress={handleBellClick}
+            onPress={toggleAlert}
             hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
             style={{
               padding: 10,

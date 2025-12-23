@@ -68,6 +68,7 @@ const MOCK_NOTICES: Notice[] = [
 interface MainContentsProps {
   category?: string;
   onCategoriesExtracted?: (categories: string[]) => void;
+  sortType?: "latest" | "popular";
 }
 
 // 날짜 문자열을 파싱하는 헬퍼 함수 (YYYY.MM.DD, YYYY-MM-DD, ISO 형식 지원)
@@ -85,7 +86,7 @@ const parseDate = (dateStr: string | undefined | null): Date => {
   return isNaN(parsed.getTime()) ? new Date() : parsed;
 };
 
-export default function MainContents({ category, onCategoriesExtracted }: MainContentsProps) {
+export default function MainContents({ category, onCategoriesExtracted, sortType = "latest" }: MainContentsProps) {
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
     "Pretendard-ExtraBold": require("../../assets/fonts/Pretendard-ExtraBold.ttf"),
@@ -101,6 +102,8 @@ export default function MainContents({ category, onCategoriesExtracted }: MainCo
   const [allNotices, setAllNotices] = useState<Notice[]>([]); // 전체 공지사항
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const [localSortType, setLocalSortType] = useState<"latest" | "popular">("latest");
 
   // 전체 공지사항 데이터 가져오기
   const fetchNotices = async () => {
@@ -146,16 +149,22 @@ export default function MainContents({ category, onCategoriesExtracted }: MainCo
     }
   };
 
-  // 카테고리별로 필터링 후 최신순 정렬
+  // 카테고리별로 필터링 후 정렬
   const notices = (category
     ? allNotices.filter(notice =>
         notice.source === category
       )
     : allNotices
   ).sort((a, b) => {
-    const dateA = parseDate(a.date || a.publishedAt);
-    const dateB = parseDate(b.date || b.publishedAt);
-    return dateB.getTime() - dateA.getTime(); // 최신순 (내림차순)
+    if (localSortType === "popular") {
+      const viewA = a.hits ?? a.viewCount ?? 0;
+      const viewB = b.hits ?? b.viewCount ?? 0;
+      return viewB - viewA; // 인기순 (조회수 높은 순)
+    } else {
+      const dateA = parseDate(a.date || a.publishedAt);
+      const dateB = parseDate(b.date || b.publishedAt);
+      return dateB.getTime() - dateA.getTime(); // 최신순
+    }
   });
 
   // 새로고침
@@ -298,6 +307,109 @@ export default function MainContents({ category, onCategoriesExtracted }: MainCo
 
   return (
     <View style={{ flex: 1, backgroundColor: "white" }}>
+      {/* 정렬 토글 버튼 */}
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "flex-end",
+          paddingHorizontal: 15,
+          paddingVertical: 10,
+          backgroundColor: "white",
+        }}
+      >
+        <View style={{ position: "relative" }}>
+          <TouchableOpacity
+            onPress={() => setShowSortMenu(!showSortMenu)}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              borderRadius: 8,
+              backgroundColor: "#5383EC",
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "Pretendard-ExtraLight",
+                fontSize: 13,
+                color: "#FFFFFF",
+              }}
+            >
+              {localSortType === "latest" ? "최신순" : "인기순"}
+            </Text>
+            <Text style={{ fontSize: 12, color: "#FFFFFF" }}>
+              {showSortMenu ? "▲" : "▼"}
+            </Text>
+          </TouchableOpacity>
+
+          {/* 정렬 메뉴 드롭다운 */}
+          {showSortMenu && (
+            <View
+              style={{
+                position: "absolute",
+                top: 38,
+                right: 0,
+                backgroundColor: "#5383EC",
+                borderRadius: 8,
+                overflow: "hidden",
+                elevation: 5,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                zIndex: 1000,
+                minWidth: 90,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => {
+                  setLocalSortType("latest");
+                  setShowSortMenu(false);
+                }}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  backgroundColor: localSortType === "latest" ? "#4070D9" : "#5383EC",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Pretendard-ExtraLight",
+                    fontSize: 13,
+                    color: "#FFFFFF",
+                  }}
+                >
+                  최신순
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setLocalSortType("popular");
+                  setShowSortMenu(false);
+                }}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  backgroundColor: localSortType === "popular" ? "#4070D9" : "#5383EC",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Pretendard-ExtraLight",
+                    fontSize: 13,
+                    color: "#FFFFFF",
+                  }}
+                >
+                  인기순
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </View>
+
       <ScrollView
         contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={

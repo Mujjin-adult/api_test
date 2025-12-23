@@ -15,13 +15,14 @@ import {
 type RootStackParamList = {
   Login: undefined;
   EnterEmail: undefined;
-  EnterPw: { email: string; name: string; studentId: string };
+  EnterPw: { email: string; name: string; studentId: string; department: string };
   Home: undefined;
   Detail: undefined;
   Search: undefined;
   Setting: undefined;
   Alert: undefined;
   Scrap: undefined;
+  DepartmentSelection: { onSelect?: (department: string) => void } | undefined;
 };
 
 type EnterEmailScreenNavigationProp = NativeStackNavigationProp<
@@ -35,9 +36,11 @@ export default function EnterEmail() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [studentId, setStudentId] = useState("");
+  const [department, setDepartment] = useState("");
   const [nameError, setNameError] = useState("");
   const [studentIdError, setStudentIdError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [departmentError, setDepartmentError] = useState("");
 
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
@@ -74,7 +77,20 @@ export default function EnterEmail() {
       setEmailError("유효한 이메일 주소를 입력해주세요.");
       return false;
     }
+    if (!text.endsWith("@inu.ac.kr")) {
+      setEmailError("학교 이메일(@inu.ac.kr)을 사용해주세요.");
+      return false;
+    }
     setEmailError("");
+    return true;
+  };
+
+  const validateDepartment = (text: string) => {
+    if (!text) {
+      setDepartmentError("학과를 선택해주세요.");
+      return false;
+    }
+    setDepartmentError("");
     return true;
   };
 
@@ -82,13 +98,14 @@ export default function EnterEmail() {
     const isNameValid = validateName(name);
     const isStudentIdValid = validateStudentId(studentId);
     const isEmailValid = validateEmail(email);
+    const isDepartmentValid = validateDepartment(department);
 
-    if (!isNameValid || !isStudentIdValid || !isEmailValid) {
+    if (!isNameValid || !isStudentIdValid || !isEmailValid || !isDepartmentValid) {
       return;
     }
 
     // 데이터를 다음 화면으로 전달
-    navigation.navigate("EnterPw", { email, name, studentId });
+    navigation.navigate("EnterPw", { email, name, studentId, department });
   };
 
   return (
@@ -207,6 +224,56 @@ export default function EnterEmail() {
         />
         {studentIdError ? (
           <Text style={{ color: "red", marginTop: 5 }}>{studentIdError}</Text>
+        ) : null}
+      </View>
+
+      {/* 학과 선택 */}
+      <View style={{ marginBottom: 15 }}>
+        <Text
+          style={{
+            fontFamily: "Pretendard-SemiBold",
+            fontSize: 14,
+            color: "#333333",
+            marginBottom: 8,
+          }}
+        >
+          학과
+        </Text>
+        <TouchableOpacity
+          style={{
+            borderWidth: 1,
+            borderColor: departmentError ? "red" : "#DDDDDD",
+            borderRadius: 10,
+            paddingHorizontal: 15,
+            paddingVertical: 12,
+            backgroundColor: "#FAFAFA",
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+          onPress={() => {
+            // Navigate to department selection and handle result
+            navigation.navigate("DepartmentSelection", {
+              onSelect: (selectedDept: string) => {
+                setDepartment(selectedDept);
+                validateDepartment(selectedDept);
+              }
+            });
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: "Pretendard-Regular",
+              fontSize: 16,
+              color: department ? "#000000" : "#AAAAAA",
+            }}
+          >
+            {department || "학과를 선택하세요"}
+          </Text>
+          <Text style={{ fontSize: 20, color: "#666" }}>›</Text>
+        </TouchableOpacity>
+        {departmentError ? (
+          <Text style={{ color: "red", marginTop: 5 }}>{departmentError}</Text>
         ) : null}
       </View>
 

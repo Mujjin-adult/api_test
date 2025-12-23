@@ -62,12 +62,11 @@ export default function All({ onCategoryChange, availableCategories }: AllProps)
         backgroundColor: "white",
       }}
     >
-
       {/* 탭 바 (크기 고정) */}
       <View
         style={{
           width: "100%",
-          height: 49, // 탭 바 높이
+          height: 49,
           backgroundColor: "#ffffff",
           borderBottomWidth: 1,
           borderBottomColor: "#bababa",
@@ -79,7 +78,7 @@ export default function All({ onCategoryChange, availableCategories }: AllProps)
             style={{
               flexDirection: "row",
               alignItems: "center",
-              height: 50, // 내부 row
+              height: 50,
             }}
           >
             {CATEGORY_CODES.map((code) => (

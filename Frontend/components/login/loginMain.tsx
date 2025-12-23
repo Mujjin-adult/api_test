@@ -97,6 +97,9 @@ export default function LoginMain() {
     if (!email) {
       setEmailError("이메일을 입력해주세요.");
       isValid = false;
+    } else if (!email.endsWith("@inu.ac.kr")) {
+      setEmailError("학교 이메일(@inu.ac.kr)을 사용해주세요.");
+      isValid = false;
     }
     if (!password) {
       setPasswordError("비밀번호를 입력해주세요.");

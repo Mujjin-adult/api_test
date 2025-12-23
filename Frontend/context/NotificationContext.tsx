@@ -9,6 +9,8 @@ interface NotificationContextType {
   addNotification: (notice: Notice) => Promise<void>;
   removeNotification: (id: string) => Promise<void>;
   clearAllNotifications: () => Promise<void>;
+  isAlertOpen: boolean;
+  toggleAlert: () => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -17,6 +19,11 @@ const NOTIFICATION_STORAGE_KEY = "notificationNotices";
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notificationNotices, setNotificationNotices] = useState<Notice[]>([]);
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+
+  const toggleAlert = () => {
+    setIsAlertOpen(!isAlertOpen);
+  };
 
   // 앱 시작 시 저장된 알림 불러오기
   useEffect(() => {
@@ -76,6 +83,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         addNotification,
         removeNotification,
         clearAllNotifications,
+        isAlertOpen,
+        toggleAlert,
       }}
     >
       {children}
