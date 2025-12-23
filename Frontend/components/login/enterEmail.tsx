@@ -245,7 +245,7 @@ export default function EnterEmail() {
               color: studentId ? "#000000" : "#AAAAAA",
             }}
           >
-            {studentId || "학번을 선택하세요"}
+            {studentId ? `${studentId}학번` : "학번을 선택하세요"}
           </Text>
           <Text style={{ fontSize: 20, color: "#666" }}>›</Text>
         </TouchableOpacity>

@@ -67,14 +67,14 @@ export async function updateName(name: string, token: string): Promise<ApiRespon
   return response.json();
 }
 
-export async function updateDepartment(departmentId: number, token: string): Promise<ApiResponse<UserInfo>> {
+export async function updateDepartment(departmentName: string, token: string): Promise<ApiResponse<UserInfo>> {
   const response = await fetch(`${BACKEND_URL}/api/users/department`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ departmentId }),
+    body: JSON.stringify({ departmentName }),
   });
   if (!response.ok) throw new Error(`학과 수정 실패: ${response.statusText}`);
   return response.json();

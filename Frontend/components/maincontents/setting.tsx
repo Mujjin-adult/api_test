@@ -1,6 +1,6 @@
 import { useFonts } from "expo-font";
 import React, { useEffect, useState } from "react";
-import { Image, ScrollView, Text, TouchableOpacity, View, Alert } from "react-native";
+import { Image, ScrollView, Text, TouchableOpacity, View, Alert, Linking } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { TokenService } from "../../services/tokenService";
@@ -124,6 +124,30 @@ export default function Setting() {
     // 앱 버전
     if (subItem === "2. 앱 버전") {
       Alert.alert("앱 버전", "버전 1.00");
+      return;
+    }
+
+    // 서비스 이용 약관
+    if (subItem === "1. 서비스 이용 약관") {
+      Linking.openURL("https://www.notion.so/25c04552316d80dd919ae1dd61a2c0be");
+      return;
+    }
+
+    // 문의하기
+    if (subItem === "2. 문의하기") {
+      Linking.openURL("https://www.notion.so/25c04552316d804eb695cffc4e3921cf");
+      return;
+    }
+
+    // 앱 소개
+    if (subItem === "3. 앱 소개") {
+      Linking.openURL("https://www.notion.so/1dc04552316d80979b38f4921dfff5d7");
+      return;
+    }
+
+    // 개인정보 처리 방침
+    if (subItem === "1. 개인정보 처리 방침") {
+      Linking.openURL("https://www.notion.so/25c04552316d8037b837d905e4e6c108");
       return;
     }
 

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { StyleSheet, View, Text, TextInput, TouchableOpacity } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
@@ -16,7 +16,7 @@ export default function StudentIdSelectionScreen() {
   const navigation = useNavigation<StudentIdSelectionNavigationProp>();
   const route = useRoute<StudentIdSelectionRouteProp>();
   const { setStudentId: setContextStudentId } = useSignup();
-  const [selectedYear, setSelectedYear] = useState<number | null>(25);
+  const [studentId, setStudentId] = useState("");
   const [activeTab, setActiveTab] = useState<number>(4);
 
   const handleTabPress = (index: number) => {
@@ -50,29 +50,15 @@ export default function StudentIdSelectionScreen() {
     navigation.goBack();
   };
 
-  const handleYearSelect = (year: number) => {
-    setSelectedYear(year);
-  };
-
   const handleSave = () => {
-    if (selectedYear) {
-      const studentIdStr = `${selectedYear}학번`;
-      console.log("학번 선택됨:", studentIdStr);
-
-      // Context에 학번 저장 (회원가입 플로우용)
-      setContextStudentId(studentIdStr);
-      console.log("Context에 학번 저장 완료:", studentIdStr);
-
-      // 기존 콜백도 지원 (다른 화면에서 사용할 경우)
+    if (studentId.trim()) {
+      setContextStudentId(studentId.trim());
       if (route.params?.onSelect) {
-        route.params.onSelect(studentIdStr);
+        route.params.onSelect(studentId.trim());
       }
     }
     navigation.goBack();
   };
-
-  // Generate years from 14 to 25
-  const years = Array.from({ length: 12 }, (_, i) => 25 - i);
 
   if (!fontsLoaded) return null;
 
@@ -81,32 +67,18 @@ export default function StudentIdSelectionScreen() {
       <Header showBackButton={true} onBackPress={handleBackPress} />
 
       <View style={styles.content}>
-        <Text style={styles.title}>학번 선택</Text>
+        <Text style={styles.title}>학번 입력</Text>
 
-        {/* Year Grid */}
-        <View style={styles.yearGrid}>
-          {years.map((year) => (
-            <TouchableOpacity
-              key={year}
-              style={[
-                styles.yearButton,
-                selectedYear === year && styles.yearButtonSelected,
-              ]}
-              onPress={() => handleYearSelect(year)}
-            >
-              <Text
-                style={[
-                  styles.yearText,
-                  selectedYear === year && styles.yearTextSelected,
-                ]}
-              >
-                {year}학번
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Text style={styles.label}>학번</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="예: 202301601"
+          value={studentId}
+          onChangeText={setStudentId}
+          keyboardType="number-pad"
+          placeholderTextColor="#999"
+        />
 
-        {/* Save Button */}
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
           <Text style={styles.saveButtonText}>저장하기</Text>
         </TouchableOpacity>
@@ -133,35 +105,22 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 30,
   },
-  yearGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 10,
-    marginBottom: 40,
+  label: {
+    fontFamily: "Pretendard-Regular",
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 8,
   },
-  yearButton: {
-    width: "28%",
-    paddingVertical: 14,
+  input: {
+    fontFamily: "Pretendard-Regular",
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 15,
     backgroundColor: "#F5F5F5",
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#E0E0E0",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  yearButtonSelected: {
-    backgroundColor: "#3478F6",
-    borderColor: "#3478F6",
-  },
-  yearText: {
-    fontFamily: "Pretendard-Regular",
-    fontSize: 15,
-    color: "#666",
-  },
-  yearTextSelected: {
-    fontFamily: "Pretendard-SemiBold",
-    color: "#fff",
+    marginBottom: 30,
   },
   saveButton: {
     width: "100%",
@@ -170,7 +129,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 20,
   },
   saveButtonText: {
     fontFamily: "Pretendard-SemiBold",

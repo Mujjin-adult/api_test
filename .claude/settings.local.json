@@ -32,7 +32,9 @@
       "Bash(TZ=Asia/Seoul date:*)",
       "Bash(node:*)",
       "Bash(npx @openapitools/openapi-generator-cli generate -i c:/Users/su565/Desktop/api-docs.json -g typescript-axios -o ./generated --skip-validate-spec)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []

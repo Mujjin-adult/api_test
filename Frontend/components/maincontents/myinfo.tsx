@@ -1,19 +1,21 @@
 import { useFonts } from "expo-font";
 import React, { useState, useEffect } from "react";
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { ScrollView, Text, TouchableOpacity, View, Alert } from "react-native";
+import { useNavigation, useIsFocused } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../App";
-import { TokenService } from "../../services/tokenService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getMyInfo, updateStudentId, updateDepartment } from "../../services/userSettingsAPI";
 
 type MyInfoNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function MyInfo() {
   const navigation = useNavigation<MyInfoNavigationProp>();
-  const [userName, setUserName] = useState("김민지");
-  const [userEmail, setUserEmail] = useState("1234abcd@inu.ac.kr");
-  const [userStudentId, setUserStudentId] = useState("25학번");
-  const [userDepartment, setUserDepartment] = useState("컴퓨터공학부");
+  const isFocused = useIsFocused();
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [userStudentId, setUserStudentId] = useState("");
+  const [userDepartment, setUserDepartment] = useState("");
 
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
@@ -22,21 +24,55 @@ export default function MyInfo() {
   });
 
   useEffect(() => {
-    const loadUserInfo = async () => {
-      try {
-        const userInfo = await TokenService.getUserInfo();
-        if (userInfo) {
-          setUserName(userInfo.name || "김민지");
-          setUserEmail(userInfo.email || "1234abcd@inu.ac.kr");
-          setUserStudentId(userInfo.studentId || "25학번");
-          setUserDepartment(userInfo.department || "컴퓨터공학부");
+    if (isFocused) loadUserInfo();
+  }, [isFocused]);
+
+  const loadUserInfo = async () => {
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      if (token) {
+        const response = await getMyInfo(token);
+        if (response.success && response.data) {
+          const data = response.data;
+          setUserName(data.name || "");
+          setUserEmail(data.email || "");
+          setUserStudentId(data.studentId || "");
+          setUserDepartment(data.department?.name || "");
         }
-      } catch (error) {
-        console.error("사용자 정보 로드 오류:", error);
       }
-    };
-    loadUserInfo();
-  }, []);
+    } catch (error) {
+      console.error("사용자 정보 로드 오류:", error);
+    }
+  };
+
+  const handleUpdateStudentId = async (selectedId: string) => {
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      if (token) {
+        const studentIdNum = selectedId.replace("학번", "");
+        await updateStudentId(studentIdNum, token);
+        setUserStudentId(studentIdNum);
+        Alert.alert("완료", "학번이 변경되었습니다.");
+      }
+    } catch (error) {
+      console.error("학번 수정 오류:", error);
+      Alert.alert("오류", "학번 수정에 실패했습니다.");
+    }
+  };
+
+  const handleUpdateDepartment = async (selectedDept: string) => {
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      if (token) {
+        await updateDepartment(selectedDept, token);
+        setUserDepartment(selectedDept);
+        Alert.alert("완료", "학과가 변경되었습니다.");
+      }
+    } catch (error) {
+      console.error("학과 수정 오류:", error);
+      Alert.alert("오류", "학과 수정에 실패했습니다.");
+    }
+  };
 
   if (!fontsLoaded) return null;
 
@@ -104,10 +140,7 @@ export default function MyInfo() {
               borderRadius: 8,
             }}
             onPress={() => navigation.navigate("DepartmentSelection", {
-              onSelect: (selectedDept: string) => {
-                setUserDepartment(selectedDept);
-                // TODO: Save to backend and TokenService
-              }
+              onSelect: handleUpdateDepartment
             })}
           >
             <Text
@@ -135,34 +168,19 @@ export default function MyInfo() {
           >
             학번
           </Text>
-          <TouchableOpacity
+          <Text
             style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
+              fontFamily: "Pretendard-Regular",
+              fontSize: 16,
+              color: "#BDBDBD",
               paddingVertical: 12,
               paddingHorizontal: 15,
               backgroundColor: "#F5F5F5",
               borderRadius: 8,
             }}
-            onPress={() => navigation.navigate("StudentIdSelection", {
-              onSelect: (selectedId: string) => {
-                setUserStudentId(selectedId);
-                // TODO: Save to backend and TokenService
-              }
-            })}
           >
-            <Text
-              style={{
-                fontFamily: "Pretendard-Regular",
-                fontSize: 16,
-                color: "#000",
-              }}
-            >
-              {userStudentId}
-            </Text>
-            <Text style={{ fontSize: 20, color: "#666" }}>›</Text>
-          </TouchableOpacity>
+            {userStudentId}
+          </Text>
         </View>
 
         {/* 이름 */}
