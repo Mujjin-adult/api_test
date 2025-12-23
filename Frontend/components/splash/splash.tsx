@@ -94,7 +94,7 @@ export default function Splash() {
       <Text
         style={{
           fontFamily: "Pretendard-Regular",
-          fontSize: width * 0.04,
+          fontSize: 18,
           color: "#666666",
           textAlign: "center",
           position: "absolute",
@@ -108,7 +108,7 @@ export default function Splash() {
       <Text
         style={{
           fontFamily: "Pretendard-Regular",
-          fontSize: width * 0.035,
+          fontSize: 16,
           color: "#666666",
           textAlign: "center",
           position: "absolute",
@@ -116,7 +116,7 @@ export default function Splash() {
           width: "100%",
         }}
       >
-        ⓒ Team name
+        ⓒ DAON
       </Text>
     </View>
   );

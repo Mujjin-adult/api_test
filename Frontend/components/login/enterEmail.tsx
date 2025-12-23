@@ -341,7 +341,7 @@ export default function EnterEmail() {
       <Text
         style={{
           fontFamily: "Pretendard-Regular",
-          fontSize: width * 0.035,
+          fontSize: 18,
           color: "#AAAAAA",
           textAlign: "center",
           position: "absolute",
@@ -356,7 +356,7 @@ export default function EnterEmail() {
       <Text
         style={{
           fontFamily: "Pretendard-Regular",
-          fontSize: width * 0.03,
+          fontSize: 16,
           color: "#AAAAAA",
           textAlign: "center",
           position: "absolute",
@@ -365,7 +365,7 @@ export default function EnterEmail() {
           alignSelf: "center",
         }}
       >
-        ⓒ Team name
+        ⓒ DAON
       </Text>
     </View>
   );
