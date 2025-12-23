@@ -6,7 +6,9 @@ import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../App";
 import { useFonts } from "expo-font";
 import Header from "@/components/topmenu/header";
+import BottomBar from "@/components/bottombar/bottombar";
 import { DEPARTMENTS } from "@/constants/departments";
+import { useSignup } from "@/context/SignupContext";
 
 type DepartmentSelectionNavigationProp = NativeStackNavigationProp<RootStackParamList, "DepartmentSelection">;
 type DepartmentSelectionRouteProp = RouteProp<RootStackParamList, "DepartmentSelection">;
@@ -14,7 +16,30 @@ type DepartmentSelectionRouteProp = RouteProp<RootStackParamList, "DepartmentSel
 export default function DepartmentSelectionScreen() {
   const navigation = useNavigation<DepartmentSelectionNavigationProp>();
   const route = useRoute<DepartmentSelectionRouteProp>();
+  const { setDepartment: setContextDepartment } = useSignup();
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<number>(4);
+
+  const handleTabPress = (index: number) => {
+    setActiveTab(index);
+    switch (index) {
+      case 0:
+        navigation.navigate('Home');
+        break;
+      case 1:
+        navigation.navigate('Scrap');
+        break;
+      case 2:
+        navigation.navigate('Chatbot');
+        break;
+      case 3:
+        navigation.navigate('Search');
+        break;
+      case 4:
+        navigation.navigate('Setting');
+        break;
+    }
+  };
 
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../assets/fonts/Pretendard-Bold.ttf"),
@@ -27,11 +52,17 @@ export default function DepartmentSelectionScreen() {
   };
 
   const handleDepartmentSelect = (department: string) => {
-    // If onSelect callback is provided (from signup flow), call it
+    console.log("학과 선택됨:", department);
+
+    // Context에 학과 저장 (회원가입 플로우용)
+    setContextDepartment(department);
+    console.log("Context에 학과 저장 완료:", department);
+
+    // 기존 콜백도 지원 (다른 화면에서 사용할 경우)
     if (route.params?.onSelect) {
       route.params.onSelect(department);
     }
-    // TODO: Save selected department to user profile if not in signup flow
+
     navigation.goBack();
   };
 
@@ -86,6 +117,8 @@ export default function DepartmentSelectionScreen() {
           ))}
         </ScrollView>
       </View>
+
+      <BottomBar onTabPress={handleTabPress} activeTab={4} />
     </View>
   );
 }

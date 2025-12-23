@@ -8,9 +8,7 @@ import type { RootStackParamList } from "../App";
 import Detail from "@/components/maincontents/detail";
 
 // 상단 탭바
-import All from "@/components/topmenu/all";
 import Header from "@/components/topmenu/header";
-import Scrap from "@/components/topmenu/scrap";
 
 // 하단 탭바
 import BottomBar from "@/components/bottombar/bottombar";
@@ -20,10 +18,26 @@ type DetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 
 export default function DetailScreen() {
   const navigation = useNavigation<DetailScreenNavigationProp>();
   const [activeTab, setActiveTab] = useState<number>(0);
-  const [isWebViewMode, setIsWebViewMode] = useState<boolean>(false);
 
   const handleTabPress = (index: number) => {
     setActiveTab(index);
+    switch (index) {
+      case 0:
+        navigation.navigate('Home');
+        break;
+      case 1:
+        navigation.navigate('Scrap');
+        break;
+      case 2:
+        navigation.navigate('Chatbot');
+        break;
+      case 3:
+        navigation.navigate('Search');
+        break;
+      case 4:
+        navigation.navigate('Setting');
+        break;
+    }
   };
 
   const handleBackPress = () => {
@@ -34,20 +48,11 @@ export default function DetailScreen() {
     navigation.navigate('Alert');
   };
 
-  const handleWebViewStateChange = (isWebView: boolean) => {
-    setIsWebViewMode(isWebView);
-  };
-
   return (
     <View style={styles.container}>
-      {!isWebViewMode && (
-        <>
-          <Header showBackButton={true} onAlertToggle={handleAlertToggle} onBackPress={handleBackPress} />
-          {activeTab === 1 ? <Scrap /> : <All />}
-        </>
-      )}
-      <Detail onWebViewStateChange={handleWebViewStateChange} />
-      {!isWebViewMode && <BottomBar onTabPress={handleTabPress} />}
+      <Header showBackButton={true} onAlertToggle={handleAlertToggle} onBackPress={handleBackPress} />
+      <Detail />
+      <BottomBar onTabPress={handleTabPress} activeTab={0} />
     </View>
   );
 }

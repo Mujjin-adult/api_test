@@ -8,6 +8,8 @@ import {
   Dimensions,
   Image,
   Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -20,6 +22,7 @@ import { TokenService } from "../../services/tokenService";
 type RootStackParamList = {
   Login: undefined;
   EnterEmail: undefined;
+  SignupName: undefined;
   Home: undefined;
   Detail: undefined;
   Search: undefined;
@@ -33,9 +36,15 @@ type LoginScreenNavigationProp = NativeStackNavigationProp<
   "Login"
 >;
 
+const { width, height } = Dimensions.get("window");
+
+// 반응형 크기 계산 함수
+const responsiveWidth = (percent: number) => (width * percent) / 100;
+const responsiveHeight = (percent: number) => (height * percent) / 100;
+const responsiveFontSize = (size: number) => Math.min(size, width * (size / 400));
+
 export default function LoginMain() {
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const { width } = Dimensions.get("window");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fcmToken, setFcmToken] = useState<string | null>(null);
@@ -55,7 +64,6 @@ export default function LoginMain() {
   // Firebase FCM 토큰 받기 함수
   const getFirebaseFCMToken = async () => {
     try {
-      // VAPID 키는 Firebase Console > 프로젝트 설정 > 클라우드 메시징 > 웹 푸시 인증서에서 확인
       const vapidKey =
         "BBErLdE9tOoJ6FSI-89EIuR2MFdssTlXuzjp2jb3fVsOeAloxpSHrlvNcbiwjGXHs37vd467Pkqtkh_54psXoHU";
 
@@ -81,12 +89,9 @@ export default function LoginMain() {
     }
   };
 
-  // 컴포넌트 마운트 시 FCM 토큰 받기
   useEffect(() => {
-    // Firebase Web SDK는 웹 플랫폼에서만 작동합니다
     if (Platform.OS === "web") {
       getFirebaseFCMToken();
-    } else {
     }
   }, []);
 
@@ -113,7 +118,6 @@ export default function LoginMain() {
     setIsLoading(true);
 
     try {
-      // 1. Firebase 인증
       const firebaseResult = await signInWithEmail(email, password);
 
       if (!firebaseResult.success) {
@@ -124,30 +128,25 @@ export default function LoginMain() {
 
       console.log("Firebase 로그인 성공:", firebaseResult.user);
 
-      // 2. Backend 로그인 (Firebase ID Token 전송)
       try {
         const backendResult = await loginToBackend(fcmToken || undefined);
 
         if (backendResult.success && backendResult.data) {
-          // 3. Backend에서 받은 토큰 저장
           if (backendResult.data.idToken) {
             await TokenService.saveToken(backendResult.data.idToken);
             console.log("Backend 토큰 저장 완료");
           }
-          // 사용자 정보 저장
           if (backendResult.data.user) {
             await TokenService.saveUserInfo(backendResult.data.user);
             console.log("사용자 정보 저장 완료:", backendResult.data.user);
           }
         } else {
-          // Backend 로그인 실패해도 Firebase 인증 성공했으면 계속 진행
           console.warn("Backend 로그인 실패 (Firebase 인증으로 계속):", backendResult.message);
         }
       } catch (backendError: any) {
         console.warn("Backend 로그인 오류 (Firebase 인증으로 계속):", backendError.message);
       }
 
-      // 4. 홈 화면으로 이동
       console.log("FCM 토큰:", fcmToken);
       navigation.navigate("Home");
     } catch (error) {
@@ -160,205 +159,202 @@ export default function LoginMain() {
 
   const handleSignUp = () => {
     console.log("회원가입 화면으로 이동");
-    navigation.navigate("EnterEmail");
+    navigation.navigate("SignupName");
   };
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: "white",
-        paddingHorizontal: 30,
-        paddingTop: 60,
-      }}
+    <ScrollView
+      contentContainerStyle={styles.scrollContainer}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
-      {/* 타이틀 */}
-      <Text
-        style={{
-          fontFamily: "Pretendard-ExtraBold",
-          fontSize: 20,
-          color: "#000000",
-          textAlign: "center",
-          marginBottom: 20,
-        }}
-      >
-        띠링인캠퍼스
-      </Text>
+      <View style={styles.container}>
+        {/* 타이틀 */}
+        <Text style={styles.title}>띠링인캠퍼스</Text>
 
-      {/* 로고 이미지 */}
-      <Image
-        source={require("../../assets/images/Logo.png")}
-        style={{
-          width: 120,
-          height: 120,
-          resizeMode: "contain",
-          alignSelf: "center",
-          marginBottom: 50,
-        }}
-      />
-
-      {/* 이메일 입력칸 */}
-      <View style={{ marginBottom: 15 }}>
-        <Text
-          style={{
-            fontFamily: "Pretendard-SemiBold",
-            fontSize: 14,
-            color: "#333333",
-            marginBottom: 8,
-          }}
-        >
-          이메일
-        </Text>
-        <TextInput
-          style={{
-            fontFamily: "Pretendard-Regular",
-            fontSize: 16,
-            borderWidth: 1,
-            borderColor: emailError ? "red" : "#DDDDDD",
-            borderRadius: 10,
-            paddingHorizontal: 15,
-            paddingVertical: 12,
-            backgroundColor: "#FAFAFA",
-          }}
-          placeholder="이메일을 입력하세요"
-          placeholderTextColor="#AAAAAA"
-          value={email}
-          onChangeText={(text) => {
-            setEmail(text);
-            if (text) setEmailError("");
-          }}
-          keyboardType="email-address"
-          autoCapitalize="none"
+        {/* 로고 이미지 */}
+        <Image
+          source={require("../../assets/images/Logo.png")}
+          style={styles.logo}
         />
-        {emailError ? (
-          <Text style={{ color: "red", marginTop: 5 }}>{emailError}</Text>
-        ) : null}
-      </View>
 
-      {/* 비밀번호 입력칸 */}
-      <View style={{ marginBottom: 25 }}>
-        <Text
-          style={{
-            fontFamily: "Pretendard-SemiBold",
-            fontSize: 14,
-            color: "#333333",
-            marginBottom: 8,
-          }}
-        >
-          비밀번호
-        </Text>
-        <TextInput
-          style={{
-            fontFamily: "Pretendard-Regular",
-            fontSize: 16,
-            borderWidth: 1,
-            borderColor: passwordError ? "red" : "#DDDDDD",
-            borderRadius: 10,
-            paddingHorizontal: 15,
-            paddingVertical: 12,
-            backgroundColor: "#FAFAFA",
-          }}
-          placeholder="비밀번호를 입력하세요"
-          placeholderTextColor="#AAAAAA"
-          value={password}
-          onChangeText={(text) => {
-            setPassword(text);
-            if (text) setPasswordError("");
-          }}
-          secureTextEntry
-        />
-        {passwordError ? (
-          <Text style={{ color: "red", marginTop: 5 }}>{passwordError}</Text>
-        ) : null}
-      </View>
-
-      {/* 시작하기 버튼 */}
-      <TouchableOpacity
-        onPress={handleLogin}
-        disabled={isLoading}
-        style={{
-          backgroundColor: isLoading ? "#99BBFF" : "#3366FF",
-          borderRadius: 10,
-          paddingVertical: 15,
-          alignItems: "center",
-          marginBottom: 20,
-        }}
-      >
-        {isLoading ? (
-          <ActivityIndicator color="#FFFFFF" />
-        ) : (
-          <Text
-            style={{
-              fontFamily: "Pretendard-Bold",
-              fontSize: 16,
-              color: "#FFFFFF",
+        {/* 이메일 입력칸 */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>이메일</Text>
+          <TextInput
+            style={[styles.input, emailError && styles.inputError]}
+            placeholder="이메일을 입력하세요"
+            placeholderTextColor="#AAAAAA"
+            value={email}
+            onChangeText={(text) => {
+              setEmail(text);
+              if (text) setEmailError("");
             }}
-          >
-            시작하기
-          </Text>
-        )}
-      </TouchableOpacity>
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          {emailError ? (
+            <Text style={styles.errorText}>{emailError}</Text>
+          ) : null}
+        </View>
 
-      {/* 계정 생성 안내 */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Text
-          style={{
-            fontFamily: "Pretendard-Regular",
-            fontSize: 14,
-            color: "#666666",
-          }}
-        >
-          아직 계정이 없으신가요?{"  "}
-        </Text>
-        <TouchableOpacity onPress={handleSignUp}>
-          <Text
-            style={{
-              fontFamily: "Pretendard-Bold",
-              fontSize: 14,
-              color: "#3366FF",
+        {/* 비밀번호 입력칸 */}
+        <View style={[styles.inputContainer, { marginBottom: responsiveHeight(3) }]}>
+          <Text style={styles.label}>비밀번호</Text>
+          <TextInput
+            style={[styles.input, passwordError && styles.inputError]}
+            placeholder="비밀번호를 입력하세요"
+            placeholderTextColor="#AAAAAA"
+            value={password}
+            onChangeText={(text) => {
+              setPassword(text);
+              if (text) setPasswordError("");
             }}
-          >
-            회원가입
-          </Text>
+            secureTextEntry
+          />
+          {passwordError ? (
+            <Text style={styles.errorText}>{passwordError}</Text>
+          ) : null}
+        </View>
+
+        {/* 시작하기 버튼 */}
+        <TouchableOpacity
+          onPress={handleLogin}
+          disabled={isLoading}
+          style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.loginButtonText}>시작하기</Text>
+          )}
         </TouchableOpacity>
+
+        {/* 계정 생성 안내 */}
+        <View style={styles.signupContainer}>
+          <Text style={styles.signupText}>아직 계정이 없으신가요?{"  "}</Text>
+          <TouchableOpacity onPress={handleSignUp}>
+            <Text style={styles.signupLink}>회원가입</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 하단 문구 */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>INU Announcement Notification App</Text>
+          <Text style={styles.footerCopyright}>ⓒ DAON</Text>
+        </View>
       </View>
-
-      {/* 하단 문구 */}
-      <Text
-        style={{
-          fontFamily: "Pretendard-Regular",
-          fontSize: 18,
-          color: "#AAAAAA",
-          textAlign: "center",
-          position: "absolute",
-          bottom: 70,
-          width: "100%",
-          alignSelf: "center",
-        }}
-      >
-        INU Announcement Notification App
-      </Text>
-
-      <Text
-        style={{
-          fontFamily: "Pretendard-Regular",
-          fontSize: 16,
-          color: "#AAAAAA",
-          textAlign: "center",
-          position: "absolute",
-          bottom: 40,
-          width: "100%",
-          alignSelf: "center",
-        }}
-      >
-        ⓒ DAON
-      </Text>
-    </View>
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  scrollContainer: {
+    flexGrow: 1,
+    backgroundColor: "white",
+  },
+  container: {
+    flex: 1,
+    backgroundColor: "white",
+    paddingHorizontal: responsiveWidth(8),
+    paddingTop: responsiveHeight(6),
+    paddingBottom: responsiveHeight(4),
+    minHeight: height,
+  },
+  title: {
+    fontFamily: "Pretendard-ExtraBold",
+    fontSize: responsiveFontSize(20),
+    color: "#000000",
+    textAlign: "center",
+    marginBottom: responsiveHeight(2),
+  },
+  logo: {
+    width: Math.min(responsiveWidth(30), 120),
+    height: Math.min(responsiveWidth(30), 120),
+    resizeMode: "contain",
+    alignSelf: "center",
+    marginBottom: responsiveHeight(5),
+  },
+  inputContainer: {
+    marginBottom: responsiveHeight(2),
+    width: "100%",
+  },
+  label: {
+    fontFamily: "Pretendard-SemiBold",
+    fontSize: responsiveFontSize(14),
+    color: "#333333",
+    marginBottom: responsiveHeight(1),
+  },
+  input: {
+    fontFamily: "Pretendard-Regular",
+    fontSize: responsiveFontSize(14),
+    borderWidth: 1,
+    borderColor: "#DDDDDD",
+    borderRadius: 10,
+    paddingHorizontal: responsiveWidth(3),
+    paddingVertical: responsiveHeight(1.5),
+    backgroundColor: "#FAFAFA",
+    width: "100%",
+    textAlign: "left",
+  },
+  inputError: {
+    borderColor: "red",
+  },
+  errorText: {
+    fontFamily: "Pretendard-Regular",
+    color: "red",
+    fontSize: responsiveFontSize(12),
+    marginTop: responsiveHeight(0.5),
+  },
+  loginButton: {
+    backgroundColor: "#3366FF",
+    borderRadius: 10,
+    paddingVertical: responsiveHeight(1.8),
+    alignItems: "center",
+    marginBottom: responsiveHeight(2.5),
+    width: "100%",
+  },
+  loginButtonDisabled: {
+    backgroundColor: "#99BBFF",
+  },
+  loginButtonText: {
+    fontFamily: "Pretendard-Bold",
+    fontSize: responsiveFontSize(16),
+    color: "#FFFFFF",
+  },
+  signupContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  signupText: {
+    fontFamily: "Pretendard-Regular",
+    fontSize: responsiveFontSize(14),
+    color: "#666666",
+  },
+  signupLink: {
+    fontFamily: "Pretendard-Bold",
+    fontSize: responsiveFontSize(14),
+    color: "#3366FF",
+  },
+  footer: {
+    position: "absolute",
+    bottom: responsiveHeight(5),
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
+  footerText: {
+    fontFamily: "Pretendard-Regular",
+    fontSize: responsiveFontSize(14),
+    color: "#AAAAAA",
+    textAlign: "center",
+    marginBottom: responsiveHeight(1),
+  },
+  footerCopyright: {
+    fontFamily: "Pretendard-Regular",
+    fontSize: responsiveFontSize(12),
+    color: "#AAAAAA",
+    textAlign: "center",
+  },
+});

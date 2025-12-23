@@ -1,6 +1,6 @@
 import { useFonts } from "expo-font";
 import React from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Image, Text, TouchableOpacity, View, StyleSheet } from "react-native";
 
 interface BottomBarProps {
   onTabPress?: (index: number) => void;
@@ -46,57 +46,32 @@ export default function BottomBar({ onTabPress, activeTab = 0 }: BottomBarProps)
 
   if (!fontsLoaded) return null;
   return (
-    <View style={{ flex: 0, backgroundColor: "white" }}>
+    <View style={styles.container}>
       {/* 하단 탭바 */}
-      <View
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 80,
-          backgroundColor: "#3366FF",
-          flexDirection: "row",
-          justifyContent: "space-around",
-          alignItems: "center",
-        }}
-      >
+      <View style={styles.tabBar}>
         {/* 탭바 안 메뉴들 */}
         {navItems.map((item, index) => (
           <TouchableOpacity key={index} onPress={() => {
             onTabPress?.(index);
           }}>
             {item.type === "image" && (
-              <View
-                style={{
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+              <View style={styles.tabItem}>
                 <Image
                   source={
                     activeTab === index && reverseNavItems[index]
                       ? reverseNavItems[index].src
                       : item.src
                   }
-                  style={{
-                    width: index === 2 ? 40 : 30, // 로고만 40, 나머진 30
-                    height: 30,
-                    resizeMode: "contain",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 3, height: 3 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 1,
-                  }}
+                  style={[
+                    styles.tabIcon,
+                    { width: index === 2 ? 40 : 30 },
+                  ]}
                 />
                 <Text
-                  style={{
-                    fontFamily: "Pretendard-Regular",
-                    color: activeTab === index ? "#000000" : "#ffffff",
-                    fontSize: 10,
-                    textAlign: "center",
-                    marginTop: 2,
-                  }}
+                  style={[
+                    styles.tabLabel,
+                    { color: activeTab === index ? "#000000" : "#ffffff" },
+                  ]}
                 >
                   {itemNames[index]}
                 </Text>
@@ -108,3 +83,39 @@ export default function BottomBar({ onTabPress, activeTab = 0 }: BottomBarProps)
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 0,
+    backgroundColor: "white",
+  },
+  tabBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 80,
+    backgroundColor: "#3366FF",
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+  tabItem: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabIcon: {
+    height: 30,
+    resizeMode: "contain",
+    shadowColor: "#000",
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 1,
+  },
+  tabLabel: {
+    fontFamily: "Pretendard-Regular",
+    fontSize: 10,
+    textAlign: "center",
+    marginTop: 2,
+  },
+});

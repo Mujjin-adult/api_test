@@ -9,9 +9,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useNotification } from "../../context/NotificationContext";
 import { useBookmark } from "../../context/BookmarkContext";
 import { useToast } from "../../context/ToastContext";
 import { Notice } from "../../services/crawlerAPI";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../../App";
 
 // 날짜 문자열을 파싱하는 헬퍼 함수 (YYYY.MM.DD, YYYY-MM-DD, ISO 형식 지원)
 const parseDate = (dateStr: string | undefined | null): Date => {
@@ -28,19 +31,23 @@ const parseDate = (dateStr: string | undefined | null): Date => {
   return isNaN(parsed.getTime()) ? new Date() : parsed;
 };
 
-export default function ScrapList() {
+type InterestListNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+export default function InterestList() {
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
     "Pretendard-Light": require("../../assets/fonts/Pretendard-Light.ttf"),
     "Pretendard-Regular": require("../../assets/fonts/Pretendard-Regular.ttf"),
+    "Pretendard-SemiBold": require("../../assets/fonts/Pretendard-SemiBold.ttf"),
   });
 
-  const navi = useNavigation();
-  const { bookmarkedNotices, isBookmarked, toggleBookmark } = useBookmark();
+  const navi = useNavigation<InterestListNavigationProp>();
+  const { notificationNotices, removeNotification } = useNotification();
+  const { isBookmarked, toggleBookmark } = useBookmark();
   const { showToast } = useToast();
 
   const handleTitlePress = (notice: Notice) => {
-    (navi as any).navigate("Detail", { notice });
+    navi.navigate("Detail", { notice });
   };
 
   const handleBookmark = async (notice: Notice) => {
@@ -69,17 +76,27 @@ export default function ScrapList() {
   return (
     <View style={{ flex: 1, backgroundColor: "white" }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-        <Text
-          style={{
-            fontFamily: "Pretendard-Bold",
-            fontSize: 16,
-            marginTop: 15,
-            marginBottom: 10,
-            marginLeft: 15,
-          }}
-        >
-          저장한 공지 ({bookmarkedNotices.length})
-        </Text>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 15, marginTop: 15, marginBottom: 10 }}>
+          <Text
+            style={{
+              fontFamily: "Pretendard-Bold",
+              fontSize: 16,
+            }}
+          >
+            알림 받은 공지 ({notificationNotices.length})
+          </Text>
+          <TouchableOpacity onPress={() => navi.navigate("KeywordSettings")}>
+            <Text
+              style={{
+                fontFamily: "Pretendard-SemiBold",
+                fontSize: 13,
+                color: "#3366FF",
+              }}
+            >
+              키워드 설정
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         <View
           style={{
@@ -87,7 +104,7 @@ export default function ScrapList() {
             paddingHorizontal: 15,
           }}
         >
-          {bookmarkedNotices.map((notice) => (
+          {notificationNotices.map((notice) => (
             <TouchableOpacity
               key={notice.id}
               onPress={() => handleTitlePress(notice)}

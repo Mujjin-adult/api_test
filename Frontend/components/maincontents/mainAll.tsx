@@ -17,6 +17,7 @@ import {
 import { Swipeable } from "react-native-gesture-handler";
 import { getNotices, Notice } from "../../services/crawlerAPI";
 import { useBookmark } from "../../context/BookmarkContext";
+import { useToast } from "../../context/ToastContext";
 
 // 목데이터 (API 실패 시 사용)
 const MOCK_NOTICES: Notice[] = [
@@ -98,6 +99,7 @@ export default function MainContents({ category, onCategoriesExtracted, sortType
   const navi = useNavigation();
   const [readTitles, setReadTitles] = useState<string[]>([]);
   const { isBookmarked, toggleBookmark } = useBookmark();
+  const { showToast } = useToast();
   const swipeRefs = useRef<{ [key: string]: Swipeable | null }>({});
   const [allNotices, setAllNotices] = useState<Notice[]>([]); // 전체 공지사항
   const [isLoading, setIsLoading] = useState(false);
@@ -110,6 +112,15 @@ export default function MainContents({ category, onCategoriesExtracted, sortType
     setIsLoading(true);
     try {
       const result = await getNotices(0, 500); // 페이지 0부터 시작, 최대 500개 조회
+      // 디버깅용: 첫 번째 공지사항의 모든 필드 확인
+      if (result.data && result.data[0]) {
+        console.log("API 응답 첫 번째 공지사항 전체:", JSON.stringify(result.data[0], null, 2));
+        console.log("조회수 관련 필드:", {
+          hits: result.data[0].hits,
+          viewCount: result.data[0].viewCount,
+          views: result.data[0].views,
+        });
+      }
       if (result.success && result.data.length > 0) {
         setAllNotices(result.data);
 
@@ -206,7 +217,7 @@ export default function MainContents({ category, onCategoriesExtracted, sortType
     try {
       const wasBookmarked = isBookmarked(notice.id);
       await toggleBookmark(notice);
-      alert(wasBookmarked ? "북마크에서 제거되었습니다." : "북마크에 추가되었습니다.");
+      showToast(wasBookmarked ? "북마크에서 제거되었습니다." : "북마크에 추가되었습니다.");
     } catch (error) {
       console.error("북마크 처리 중 오류:", error);
     }
@@ -307,129 +318,135 @@ export default function MainContents({ category, onCategoriesExtracted, sortType
 
   return (
     <View style={{ flex: 1, backgroundColor: "white" }}>
-      {/* 정렬 토글 버튼 */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "flex-end",
-          paddingHorizontal: 15,
-          paddingVertical: 10,
-          backgroundColor: "white",
-        }}
-      >
-        <View style={{ position: "relative" }}>
-          <TouchableOpacity
-            onPress={() => setShowSortMenu(!showSortMenu)}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              paddingHorizontal: 14,
-              paddingVertical: 8,
-              borderRadius: 8,
-              backgroundColor: "#5383EC",
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: "Pretendard-ExtraLight",
-                fontSize: 13,
-                color: "#FFFFFF",
-              }}
-            >
-              {localSortType === "latest" ? "최신순" : "인기순"}
-            </Text>
-            <Text style={{ fontSize: 12, color: "#FFFFFF" }}>
-              {showSortMenu ? "▲" : "▼"}
-            </Text>
-          </TouchableOpacity>
-
-          {/* 정렬 메뉴 드롭다운 */}
-          {showSortMenu && (
-            <View
-              style={{
-                position: "absolute",
-                top: 38,
-                right: 0,
-                backgroundColor: "#5383EC",
-                borderRadius: 8,
-                overflow: "hidden",
-                elevation: 5,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.25,
-                shadowRadius: 3.84,
-                zIndex: 1000,
-                minWidth: 90,
-              }}
-            >
-              <TouchableOpacity
-                onPress={() => {
-                  setLocalSortType("latest");
-                  setShowSortMenu(false);
-                }}
-                style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 10,
-                  backgroundColor: localSortType === "latest" ? "#4070D9" : "#5383EC",
-                }}
-              >
-                <Text
-                  style={{
-                    fontFamily: "Pretendard-ExtraLight",
-                    fontSize: 13,
-                    color: "#FFFFFF",
-                  }}
-                >
-                  최신순
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  setLocalSortType("popular");
-                  setShowSortMenu(false);
-                }}
-                style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 10,
-                  backgroundColor: localSortType === "popular" ? "#4070D9" : "#5383EC",
-                }}
-              >
-                <Text
-                  style={{
-                    fontFamily: "Pretendard-ExtraLight",
-                    fontSize: 13,
-                    color: "#FFFFFF",
-                  }}
-                >
-                  인기순
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </View>
-
       <ScrollView
         contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-          {months.map((month) => {
+          {months.map((month, monthIndex) => {
             return (
-              <View key={month}>
-                <Text
+              <View key={month} style={{ zIndex: monthIndex === 0 ? 1000 : 1, overflow: "visible" }}>
+                {/* 월 헤더와 필터 (첫 번째 월에만 필터 표시) */}
+                <View
                   style={{
-                    fontFamily: "Pretendard-Light",
-                    fontSize: 12,
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    paddingHorizontal: 15,
                     marginTop: 10,
                     marginBottom: 0,
-                    marginLeft: 15,
+                    zIndex: 1000,
+                    overflow: "visible",
                   }}
                 >
-                  {month}
-                </Text>
+                  <Text
+                    style={{
+                      fontFamily: "Pretendard-Light",
+                      fontSize: 12,
+                    }}
+                  >
+                    {month}
+                  </Text>
+
+                  {/* 첫 번째 월에만 정렬 필터 표시 */}
+                  {monthIndex === 0 && (
+                    <View style={{ position: "relative", zIndex: 1001 }}>
+                      <TouchableOpacity
+                        onPress={() => setShowSortMenu(!showSortMenu)}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 4,
+                          paddingHorizontal: 10,
+                          paddingVertical: 5,
+                          borderRadius: 6,
+                          backgroundColor: "#FFFFFF",
+                          borderWidth: 1,
+                          borderColor: "#E0E0E0",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: "Pretendard-Regular",
+                            fontSize: 12,
+                            color: "#333333",
+                          }}
+                        >
+                          {localSortType === "latest" ? "최신순" : "인기순"}
+                        </Text>
+                        <Text style={{ fontSize: 10, color: "#666666" }}>
+                          {showSortMenu ? "▲" : "▼"}
+                        </Text>
+                      </TouchableOpacity>
+
+                      {/* 정렬 메뉴 드롭다운 */}
+                      {showSortMenu && (
+                        <View
+                          style={{
+                            position: "absolute",
+                            top: 28,
+                            right: 0,
+                            backgroundColor: "#FFFFFF",
+                            borderRadius: 6,
+                            borderWidth: 1,
+                            borderColor: "#E0E0E0",
+                            overflow: "hidden",
+                            elevation: 10,
+                            shadowColor: "#000",
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.15,
+                            shadowRadius: 4,
+                            zIndex: 1002,
+                          }}
+                        >
+                          <TouchableOpacity
+                            onPress={() => {
+                              setLocalSortType("latest");
+                              setShowSortMenu(false);
+                            }}
+                            style={{
+                              paddingHorizontal: 10,
+                              paddingVertical: 8,
+                              backgroundColor: localSortType === "latest" ? "#F5F5F5" : "#FFFFFF",
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontFamily: "Pretendard-Regular",
+                                fontSize: 12,
+                                color: localSortType === "latest" ? "#3366FF" : "#333333",
+                              }}
+                            >
+                              최신순
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setLocalSortType("popular");
+                              setShowSortMenu(false);
+                            }}
+                            style={{
+                              paddingHorizontal: 10,
+                              paddingVertical: 8,
+                              backgroundColor: localSortType === "popular" ? "#F5F5F5" : "#FFFFFF",
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontFamily: "Pretendard-Regular",
+                                fontSize: 12,
+                                color: localSortType === "popular" ? "#3366FF" : "#333333",
+                              }}
+                            >
+                              인기순
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
 
                 <View
                   style={{
@@ -437,6 +454,7 @@ export default function MainContents({ category, onCategoriesExtracted, sortType
                     marginTop: 10,
                     paddingHorizontal: 15,
                     overflow: "visible",
+                    zIndex: 1,
                   }}
                 >
                   {groupedNotices[month].map((notice, i) => {

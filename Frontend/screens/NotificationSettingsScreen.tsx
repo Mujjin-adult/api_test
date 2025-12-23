@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../App";
 import { useFonts } from "expo-font";
 import Header from "@/components/topmenu/header";
+import BottomBar from "@/components/bottombar/bottombar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { updateSettings, getMyInfo } from "../services/userSettingsAPI";
 
@@ -15,6 +16,28 @@ export default function NotificationSettingsScreen() {
   const [keywordNotifications, setKeywordNotifications] = useState(true);
   const [newsAndBenefits, setNewsAndBenefits] = useState(true);
   const [showConsentModal, setShowConsentModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<number>(4);
+
+  const handleTabPress = (index: number) => {
+    setActiveTab(index);
+    switch (index) {
+      case 0:
+        navigation.navigate('Home');
+        break;
+      case 1:
+        navigation.navigate('Scrap');
+        break;
+      case 2:
+        navigation.navigate('Chatbot');
+        break;
+      case 3:
+        navigation.navigate('Search');
+        break;
+      case 4:
+        navigation.navigate('Setting');
+        break;
+    }
+  };
 
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../assets/fonts/Pretendard-Bold.ttf"),
@@ -141,7 +164,7 @@ export default function NotificationSettingsScreen() {
       <Modal
         visible={showConsentModal}
         transparent={true}
-        animationType="fade"
+        animationType="none"
         onRequestClose={() => setShowConsentModal(false)}
       >
         <View style={styles.modalOverlay}>
@@ -163,6 +186,8 @@ export default function NotificationSettingsScreen() {
           </View>
         </View>
       </Modal>
+
+      <BottomBar onTabPress={handleTabPress} activeTab={4} />
     </View>
   );
 }

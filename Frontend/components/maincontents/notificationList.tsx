@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useNotification } from "../../context/NotificationContext";
 import { useBookmark } from "../../context/BookmarkContext";
+import { useToast } from "../../context/ToastContext";
 import { Notice } from "../../services/crawlerAPI";
 
 // 날짜 문자열을 파싱하는 헬퍼 함수 (YYYY.MM.DD, YYYY-MM-DD, ISO 형식 지원)
@@ -38,6 +39,7 @@ export default function NotificationList() {
   const navi = useNavigation();
   const { notificationNotices, removeNotification } = useNotification();
   const { isBookmarked, toggleBookmark } = useBookmark();
+  const { showToast } = useToast();
 
   const handleTitlePress = (notice: Notice) => {
     (navi as any).navigate("Detail", { notice });
@@ -47,7 +49,7 @@ export default function NotificationList() {
     try {
       const wasBookmarked = isBookmarked(notice.id);
       await toggleBookmark(notice);
-      alert(wasBookmarked ? "북마크에서 제거되었습니다." : "북마크에 추가되었습니다.");
+      showToast(wasBookmarked ? "북마크에서 제거되었습니다." : "북마크에 추가되었습니다.");
     } catch (error) {
       console.error("북마크 처리 중 오류:", error);
     }

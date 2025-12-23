@@ -3,9 +3,10 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BookmarkProvider } from './context/BookmarkContext';
-import { NotificationProvider, useNotification } from './context/NotificationContext';
-import { Modal, StyleSheet, TouchableWithoutFeedback, View } from 'react-native';
-import Alert from './components/maincontents/alert';
+import { NotificationProvider } from './context/NotificationContext';
+import { ToastProvider } from './context/ToastContext';
+import { SignupProvider } from './context/SignupContext';
+import { View, Platform, StyleSheet } from 'react-native';
 
 // 화면 컴포넌트 import
 import LoginScreen from './screens/LoginScreen';
@@ -25,6 +26,12 @@ import StudentIdSelectionScreen from './screens/StudentIdSelectionScreen';
 import NotificationSettingsScreen from './screens/NotificationSettingsScreen';
 import KeywordSettingsScreen from './screens/KeywordSettingsScreen';
 import DeleteAccountScreen from './screens/DeleteAccountScreen';
+// 새로운 회원가입 플로우 화면
+import SignupNameScreen from './screens/SignupNameScreen';
+import SignupStudentIdScreen from './screens/SignupStudentIdScreen';
+import SignupDepartmentScreen from './screens/SignupDepartmentScreen';
+import SignupEmailScreen from './screens/SignupEmailScreen';
+import SignupPasswordScreen from './screens/SignupPasswordScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -44,13 +51,17 @@ export type RootStackParamList = {
   NotificationSettings: undefined;
   KeywordSettings: undefined;
   DeleteAccount: undefined;
+  // 새로운 회원가입 플로우
+  SignupName: undefined;
+  SignupStudentId: { name: string };
+  SignupDepartment: { name: string; studentId: string };
+  SignupEmail: { name: string; studentId: string; department: string };
+  SignupPassword: { name: string; studentId: string; department: string; email: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function AppContent() {
-  const { isAlertOpen, toggleAlert } = useNotification();
-
   return (
     <View style={{ flex: 1 }}>
       <NavigationContainer>
@@ -66,6 +77,12 @@ function AppContent() {
             <Stack.Screen name="EnterEmail" component={EnterEmailScreen} />
             <Stack.Screen name="EnterPw" component={EnterPwScreen} />
             <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
+            {/* 새로운 회원가입 플로우 */}
+            <Stack.Screen name="SignupName" component={SignupNameScreen} />
+            <Stack.Screen name="SignupStudentId" component={SignupStudentIdScreen} />
+            <Stack.Screen name="SignupDepartment" component={SignupDepartmentScreen} />
+            <Stack.Screen name="SignupEmail" component={SignupEmailScreen} />
+            <Stack.Screen name="SignupPassword" component={SignupPasswordScreen} />
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Detail" component={DetailScreen} />
             <Stack.Screen name="Search" component={SearchScreen} />
@@ -78,57 +95,48 @@ function AppContent() {
             <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
             <Stack.Screen name="KeywordSettings" component={KeywordSettingsScreen} />
             <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
-          </Stack.Group>
-          <Stack.Group screenOptions={{ presentation: 'modal' }}>
             <Stack.Screen name="Setting" component={SettingScreen} />
           </Stack.Group>
         </Stack.Navigator>
       </NavigationContainer>
-
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={isAlertOpen}
-        onRequestClose={toggleAlert}
-      >
-        <TouchableWithoutFeedback onPress={toggleAlert}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.modalContent}>
-                <Alert />
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
     </View>
   );
 }
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <NotificationProvider>
-        <BookmarkProvider>
-          <AppContent />
-        </BookmarkProvider>
-      </NotificationProvider>
-    </GestureHandlerRootView>
+    <View style={styles.outerContainer}>
+      <View style={styles.appContainer}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <ToastProvider>
+            <SignupProvider>
+              <NotificationProvider>
+                <BookmarkProvider>
+                  <AppContent />
+                </BookmarkProvider>
+              </NotificationProvider>
+            </SignupProvider>
+          </ToastProvider>
+        </GestureHandlerRootView>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  outerContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
+    backgroundColor: '#E5E5E5',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  modalContent: {
-    width: '90%',
-    height: '80%',
-    backgroundColor: 'white',
-    borderRadius: 10,
-    overflow: 'hidden',
+  appContainer: {
+    flex: 1,
+    width: '100%',
+    maxWidth: Platform.OS === 'web' ? 430 : '100%',
+    backgroundColor: '#FFFFFF',
+    ...(Platform.OS === 'web' && {
+      boxShadow: '0 0 20px rgba(0, 0, 0, 0.1)',
+    }),
   },
 });

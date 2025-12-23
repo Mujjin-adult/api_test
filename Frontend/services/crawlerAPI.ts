@@ -212,9 +212,25 @@ export const getNoticeDetail = async (id: string) => {
       throw new Error(data.message || "공지사항 상세를 불러오는데 실패했습니다.");
     }
 
+    // 디버깅: 응답 데이터 구조 확인
+    console.log("getNoticeDetail 원본 응답:", JSON.stringify(data, null, 2));
+
+    // 다양한 응답 구조 처리
+    let noticeData = null;
+    if (data.data) {
+      // { success: true, data: {...} } 형식
+      noticeData = data.data;
+    } else if (data.notice) {
+      // { notice: {...} } 형식
+      noticeData = data.notice;
+    } else if (data.id && data.title) {
+      // 직접 Notice 객체 반환
+      noticeData = data;
+    }
+
     return {
       success: true,
-      data: data.notice || data.data || data,
+      data: noticeData,
     };
   } catch (error) {
     console.error("공지사항 상세 조회 오류:", error);

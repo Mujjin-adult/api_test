@@ -1,8 +1,13 @@
 import { useFonts } from "expo-font";
-import React, { useState } from "react";
+import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
-export default function Scrap() {
+interface ScrapProps {
+  selectedTab: "관심 공지" | "스크랩 공지";
+  onTabChange: (tab: "관심 공지" | "스크랩 공지") => void;
+}
+
+export default function Scrap({ selectedTab, onTabChange }: ScrapProps) {
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
     "Pretendard-ExtraBold": require("../../assets/fonts/Pretendard-ExtraBold.ttf"),
@@ -10,9 +15,7 @@ export default function Scrap() {
     "Pretendard-Light": require("../../assets/fonts/Pretendard-Light.ttf"),
     "Pretendard-Regular": require("../../assets/fonts/Pretendard-Regular.ttf"),
   });
-  const categories = ["관심 공지", "스크랩 공지"];
-
-  const [selected, setSelected] = useState("관심 공지");
+  const categories: ("관심 공지" | "스크랩 공지")[] = ["관심 공지", "스크랩 공지"];
 
   if (!fontsLoaded) return null;
 
@@ -46,13 +49,13 @@ export default function Scrap() {
             <TouchableOpacity
               key={category}
               style={{ flex: 1 }}
-              onPress={() => setSelected(category)}
+              onPress={() => onTabChange(category)}
             >
               <View
                 style={{
                   paddingHorizontal: 0,
                   paddingVertical: 15,
-                  borderBottomWidth: selected === category ? 4 : 0,
+                  borderBottomWidth: selectedTab === category ? 4 : 0,
                   borderBottomColor: "#bababa",
                   alignItems: "center",
                 }}
@@ -60,10 +63,10 @@ export default function Scrap() {
                 <Text
                   style={{
                     fontFamily:
-                      selected === category
+                      selectedTab === category
                         ? "Pretendard-Bold"
                         : "Pretendard-Light",
-                    color: selected === category ? "black" : "#555",
+                    color: selectedTab === category ? "black" : "#555",
                     fontSize: 15,
                   }}
                 >
