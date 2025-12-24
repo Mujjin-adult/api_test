@@ -208,7 +208,7 @@ export default function EnterEmail() {
         ) : null}
       </View>
 
-      {/* 학번 선택 */}
+      {/* 학번 입력 */}
       <View style={{ marginBottom: 15 }}>
         <Text
           style={{
@@ -220,35 +220,27 @@ export default function EnterEmail() {
         >
           학번
         </Text>
-        <TouchableOpacity
+        <TextInput
           style={{
+            fontFamily: "Pretendard-Regular",
+            fontSize: 16,
             borderWidth: 1,
             borderColor: studentIdError ? "red" : "#DDDDDD",
             borderRadius: 10,
             paddingHorizontal: 15,
             paddingVertical: 12,
             backgroundColor: "#FAFAFA",
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
           }}
-          onPress={() => {
-            // Navigate to student ID selection (context 사용)
-            console.log("학번 선택 화면으로 이동");
-            navigation.navigate("StudentIdSelection", { fromSignup: true });
+          placeholder="예: 202301601"
+          placeholderTextColor="#AAAAAA"
+          value={studentId}
+          onChangeText={(text) => {
+            setStudentId(text);
+            setContextStudentId(text);
+            validateStudentId(text);
           }}
-        >
-          <Text
-            style={{
-              fontFamily: "Pretendard-Regular",
-              fontSize: 16,
-              color: studentId ? "#000000" : "#AAAAAA",
-            }}
-          >
-            {studentId ? `${studentId}학번` : "학번을 선택하세요"}
-          </Text>
-          <Text style={{ fontSize: 20, color: "#666" }}>›</Text>
-        </TouchableOpacity>
+          keyboardType="number-pad"
+        />
         {studentIdError ? (
           <Text style={{ color: "red", marginTop: 5 }}>{studentIdError}</Text>
         ) : null}

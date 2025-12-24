@@ -132,6 +132,14 @@ export default function SignupDepartmentScreen() {
           </ScrollView>
         )}
 
+        {/* 검색 결과 없음 */}
+        {searchQuery && !selectedDepartment && filteredDepartments.length === 0 && (
+          <View style={styles.noResultContainer}>
+            <Text style={styles.noResultText}>검색 결과가 없습니다.</Text>
+            <Text style={styles.noResultHint}>올바른 학과명을 입력해주세요.</Text>
+          </View>
+        )}
+
         {/* 선택된 학과 표시 */}
         {selectedDepartment && (
           <View style={styles.selectedContainer}>
@@ -235,6 +243,27 @@ const styles = StyleSheet.create({
     fontFamily: "Pretendard-Regular",
     fontSize: responsiveFontSize(15),
     color: "#333333",
+  },
+  noResultContainer: {
+    paddingVertical: responsiveHeight(2),
+    paddingHorizontal: responsiveWidth(4),
+    backgroundColor: "#FFF5F5",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#FFD0D0",
+    marginBottom: responsiveHeight(1),
+    alignItems: "center",
+  },
+  noResultText: {
+    fontFamily: "Pretendard-SemiBold",
+    fontSize: responsiveFontSize(14),
+    color: "#FF6B6B",
+    marginBottom: responsiveHeight(0.5),
+  },
+  noResultHint: {
+    fontFamily: "Pretendard-Regular",
+    fontSize: responsiveFontSize(13),
+    color: "#999",
   },
   selectedContainer: {
     paddingVertical: responsiveHeight(1.5),

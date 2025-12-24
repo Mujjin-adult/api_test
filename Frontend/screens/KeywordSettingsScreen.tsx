@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Switch } from "react-native";
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Switch } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../App";
@@ -8,6 +8,7 @@ import Header from "@/components/topmenu/header";
 import BottomBar from "@/components/bottombar/bottombar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getKeywords, createKeyword, deleteKeyword, toggleKeyword, Keyword } from "../services/keywordAPI";
+import CustomModal from "@/components/common/CustomModal";
 
 type KeywordSettingsNavigationProp = NativeStackNavigationProp<RootStackParamList, "KeywordSettings">;
 
@@ -16,6 +17,17 @@ export default function KeywordSettingsScreen() {
   const [keyword, setKeyword] = useState("");
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [activeTab, setActiveTab] = useState<number>(4);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalConfig, setModalConfig] = useState({
+    title: "",
+    message: "",
+    type: "info" as "success" | "error" | "info" | "warning",
+  });
+
+  const showModal = (title: string, message: string, type: "success" | "error" | "info" | "warning") => {
+    setModalConfig({ title, message, type });
+    setModalVisible(true);
+  };
 
   const handleTabPress = (index: number) => {
     setActiveTab(index);
@@ -69,24 +81,24 @@ export default function KeywordSettingsScreen() {
 
   const handleAddKeyword = async () => {
     if (!keyword.trim()) {
-      Alert.alert("알림", "키워드를 입력해주세요.");
+      showModal("알림", "키워드를 입력해주세요.", "warning");
       return;
     }
 
     if (keywords.some(k => k.keyword === keyword.trim())) {
-      Alert.alert("알림", "이미 등록된 키워드입니다.");
+      showModal("알림", "이미 등록된 키워드입니다.", "warning");
       return;
     }
 
     if (keywords.length >= 10) {
-      Alert.alert("알림", "키워드는 최대 10개까지 등록할 수 있습니다.");
+      showModal("알림", "키워드는 최대 10개까지 등록할 수 있습니다.", "warning");
       return;
     }
 
     try {
       const token = await AsyncStorage.getItem("authToken");
       if (!token) {
-        Alert.alert("오류", "로그인이 필요합니다.");
+        showModal("오류", "로그인이 필요합니다.", "error");
         return;
       }
 
@@ -98,7 +110,7 @@ export default function KeywordSettingsScreen() {
       }
     } catch (error) {
       console.error("키워드 추가 오류:", error);
-      Alert.alert("오류", "키워드 추가에 실패했습니다.");
+      showModal("오류", "키워드 추가에 실패했습니다.", "error");
     }
   };
 
@@ -113,7 +125,7 @@ export default function KeywordSettingsScreen() {
       await AsyncStorage.setItem("userKeywords", JSON.stringify(newKeywords.map(k => k.keyword)));
     } catch (error) {
       console.error("키워드 삭제 오류:", error);
-      Alert.alert("오류", "키워드 삭제에 실패했습니다.");
+      showModal("오류", "키워드 삭제에 실패했습니다.", "error");
     }
   };
 
@@ -194,6 +206,14 @@ export default function KeywordSettingsScreen() {
       </View>
 
       <BottomBar onTabPress={handleTabPress} activeTab={4} />
+
+      <CustomModal
+        visible={modalVisible}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        onConfirm={() => setModalVisible(false)}
+      />
     </View>
   );
 }

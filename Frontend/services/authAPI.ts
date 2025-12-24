@@ -198,8 +198,10 @@ export const registerUserToBackend = async (
     console.log("========== 백엔드 회원가입 API 호출 ==========");
     console.log("요청 URL:", `${BACKEND_URL}/api/auth/signup`);
     console.log("요청 데이터:", requestBody);
-    console.log("JSON 문자열:", JSON.stringify(requestBody, null, 2));
     console.log("==============================================");
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     const response = await fetch(`${BACKEND_URL}/api/auth/signup`, {
       method: "POST",
@@ -207,8 +209,10 @@ export const registerUserToBackend = async (
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestBody),
+      signal: controller.signal,
     });
 
+    clearTimeout(timeoutId);
     const data = await response.json();
 
     if (response.ok && data.success) {
@@ -252,6 +256,9 @@ export const loginToBackend = async (fcmToken?: string) => {
     // Firebase ID Token 발급
     const idToken = await user.getIdToken();
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
       method: "POST",
       headers: {
@@ -261,8 +268,10 @@ export const loginToBackend = async (fcmToken?: string) => {
         idToken,
         fcmToken,
       }),
+      signal: controller.signal,
     });
 
+    clearTimeout(timeoutId);
     const data = await response.json();
 
     if (response.ok && data.success) {

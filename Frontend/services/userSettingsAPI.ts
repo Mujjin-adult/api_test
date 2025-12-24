@@ -138,11 +138,17 @@ export async function loginWithEmail(
   password: string,
   fcmToken?: string
 ): Promise<ApiResponse<{ idToken: string; tokenType: string; expiresIn: number; user: any }>> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+
   const response = await fetch(`${BACKEND_URL}/api/auth/login/email`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password, fcmToken }),
+    signal: controller.signal,
   });
+
+  clearTimeout(timeoutId);
   if (!response.ok) throw new Error(`로그인 실패: ${response.statusText}`);
   return response.json();
 }

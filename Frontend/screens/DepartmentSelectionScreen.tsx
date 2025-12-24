@@ -97,24 +97,31 @@ export default function DepartmentSelectionScreen() {
 
         {/* Department List */}
         <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
-          {filteredDepartments.map((college, collegeIndex) => (
-            <View key={collegeIndex} style={styles.collegeSection}>
-              <TouchableOpacity style={styles.collegeHeader}>
-                <Text style={styles.collegeName}>{college.college}</Text>
-                <Text style={styles.arrow}>›</Text>
-              </TouchableOpacity>
-
-              {college.departments.map((dept, deptIndex) => (
-                <TouchableOpacity
-                  key={deptIndex}
-                  style={styles.departmentItem}
-                  onPress={() => handleDepartmentSelect(dept)}
-                >
-                  <Text style={styles.departmentName}>• {dept}</Text>
+          {filteredDepartments.length > 0 ? (
+            filteredDepartments.map((college, collegeIndex) => (
+              <View key={collegeIndex} style={styles.collegeSection}>
+                <TouchableOpacity style={styles.collegeHeader}>
+                  <Text style={styles.collegeName}>{college.college}</Text>
+                  <Text style={styles.arrow}>›</Text>
                 </TouchableOpacity>
-              ))}
+
+                {college.departments.map((dept, deptIndex) => (
+                  <TouchableOpacity
+                    key={deptIndex}
+                    style={styles.departmentItem}
+                    onPress={() => handleDepartmentSelect(dept)}
+                  >
+                    <Text style={styles.departmentName}>• {dept}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ))
+          ) : searchQuery ? (
+            <View style={styles.noResultContainer}>
+              <Text style={styles.noResultText}>검색 결과가 없습니다.</Text>
+              <Text style={styles.noResultHint}>올바른 학과명을 입력해주세요.</Text>
             </View>
-          ))}
+          ) : null}
         </ScrollView>
       </View>
 
@@ -192,5 +199,25 @@ const styles = StyleSheet.create({
     fontFamily: "Pretendard-Regular",
     fontSize: 15,
     color: "#000",
+  },
+  noResultContainer: {
+    paddingVertical: 20,
+    paddingHorizontal: 15,
+    backgroundColor: "#FFF5F5",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#FFD0D0",
+    alignItems: "center",
+  },
+  noResultText: {
+    fontFamily: "Pretendard-SemiBold",
+    fontSize: 14,
+    color: "#FF6B6B",
+    marginBottom: 5,
+  },
+  noResultHint: {
+    fontFamily: "Pretendard-Regular",
+    fontSize: 13,
+    color: "#999",
   },
 });

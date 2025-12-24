@@ -1,11 +1,12 @@
 import { useFonts } from "expo-font";
 import React, { useState, useEffect } from "react";
-import { ScrollView, Text, TouchableOpacity, View, Alert } from "react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useNavigation, useIsFocused } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../App";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getMyInfo, updateStudentId, updateDepartment } from "../../services/userSettingsAPI";
+import CustomModal from "../common/CustomModal";
 
 type MyInfoNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -16,6 +17,12 @@ export default function MyInfo() {
   const [userEmail, setUserEmail] = useState("");
   const [userStudentId, setUserStudentId] = useState("");
   const [userDepartment, setUserDepartment] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalConfig, setModalConfig] = useState({
+    title: "",
+    message: "",
+    type: "info" as "success" | "error" | "info" | "warning",
+  });
 
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
@@ -45,6 +52,11 @@ export default function MyInfo() {
     }
   };
 
+  const showModal = (title: string, message: string, type: "success" | "error" | "info" | "warning") => {
+    setModalConfig({ title, message, type });
+    setModalVisible(true);
+  };
+
   const handleUpdateStudentId = async (selectedId: string) => {
     try {
       const token = await AsyncStorage.getItem("authToken");
@@ -52,11 +64,11 @@ export default function MyInfo() {
         const studentIdNum = selectedId.replace("학번", "");
         await updateStudentId(studentIdNum, token);
         setUserStudentId(studentIdNum);
-        Alert.alert("완료", "학번이 변경되었습니다.");
+        showModal("완료", "학번이 변경되었습니다.", "success");
       }
     } catch (error) {
       console.error("학번 수정 오류:", error);
-      Alert.alert("오류", "학번 수정에 실패했습니다.");
+      showModal("오류", "학번 수정에 실패했습니다.", "error");
     }
   };
 
@@ -66,11 +78,11 @@ export default function MyInfo() {
       if (token) {
         await updateDepartment(selectedDept, token);
         setUserDepartment(selectedDept);
-        Alert.alert("완료", "학과가 변경되었습니다.");
+        showModal("완료", "학과가 변경되었습니다.", "success");
       }
     } catch (error) {
       console.error("학과 수정 오류:", error);
-      Alert.alert("오류", "학과 수정에 실패했습니다.");
+      showModal("오류", "학과 수정에 실패했습니다.", "error");
     }
   };
 
@@ -255,6 +267,14 @@ export default function MyInfo() {
           </View>
         </View>
       </View>
+
+      <CustomModal
+        visible={modalVisible}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        onConfirm={() => setModalVisible(false)}
+      />
     </ScrollView>
   );
 }

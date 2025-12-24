@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -15,13 +16,6 @@ import { useFonts } from "expo-font";
 
 type SignupStudentIdNavigationProp = NativeStackNavigationProp<RootStackParamList, "SignupStudentId">;
 type SignupStudentIdRouteProp = RouteProp<RootStackParamList, "SignupStudentId">;
-
-const STUDENT_IDS = [
-  "25학번", "24학번", "23학번",
-  "22학번", "21학번", "20학번",
-  "19학번", "18학번", "17학번",
-  "16학번", "15학번", "14학번",
-];
 
 const { width, height } = Dimensions.get("window");
 
@@ -34,7 +28,7 @@ export default function SignupStudentIdScreen() {
   const navigation = useNavigation<SignupStudentIdNavigationProp>();
   const route = useRoute<SignupStudentIdRouteProp>();
   const { name } = route.params;
-  const [selectedId, setSelectedId] = useState("");
+  const [studentId, setStudentId] = useState("");
   const [error, setError] = useState("");
 
   const [fontsLoaded] = useFonts({
@@ -47,12 +41,12 @@ export default function SignupStudentIdScreen() {
   if (!fontsLoaded) return null;
 
   const handleContinue = () => {
-    if (!selectedId) {
-      setError("학번을 선택해주세요.");
+    if (!studentId.trim()) {
+      setError("학번을 입력해주세요.");
       return;
     }
     setError("");
-    navigation.navigate("SignupDepartment", { name, studentId: selectedId });
+    navigation.navigate("SignupDepartment", { name, studentId: studentId.trim() });
   };
 
   return (
@@ -71,34 +65,19 @@ export default function SignupStudentIdScreen() {
           style={styles.logo}
         />
 
-        {/* 학번 섹션 */}
+        {/* 학번 입력 */}
         <Text style={styles.sectionTitle}>학번</Text>
-
-        {/* 학번 버튼 그리드 */}
-        <View style={styles.grid}>
-          {STUDENT_IDS.map((id) => (
-            <TouchableOpacity
-              key={id}
-              style={[
-                styles.gridButton,
-                selectedId === id && styles.gridButtonSelected,
-              ]}
-              onPress={() => {
-                setSelectedId(id);
-                setError("");
-              }}
-            >
-              <Text
-                style={[
-                  styles.gridButtonText,
-                  selectedId === id && styles.gridButtonTextSelected,
-                ]}
-              >
-                {id}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <TextInput
+          style={[styles.input, error ? styles.inputError : null]}
+          placeholder="예: 202301601"
+          placeholderTextColor="#AAAAAA"
+          value={studentId}
+          onChangeText={(text) => {
+            setStudentId(text);
+            if (text.trim()) setError("");
+          }}
+          keyboardType="number-pad"
+        />
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
         {/* 계속하기 버튼 */}
@@ -149,35 +128,19 @@ const styles = StyleSheet.create({
     color: "#333333",
     marginBottom: responsiveHeight(2),
   },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginBottom: responsiveHeight(1),
-  },
-  gridButton: {
-    width: "31%",
-    paddingVertical: responsiveHeight(1.5),
+  input: {
+    fontFamily: "Pretendard-Regular",
+    fontSize: responsiveFontSize(16),
     borderWidth: 1,
     borderColor: "#DDDDDD",
     borderRadius: 10,
-    alignItems: "center",
-    marginBottom: responsiveHeight(1),
+    paddingHorizontal: responsiveWidth(4),
+    paddingVertical: responsiveHeight(1.5),
     backgroundColor: "#FAFAFA",
+    marginBottom: responsiveHeight(1),
   },
-  gridButtonSelected: {
-    borderColor: "#3366FF",
-    borderWidth: 2,
-    backgroundColor: "#F0F5FF",
-  },
-  gridButtonText: {
-    fontFamily: "Pretendard-Regular",
-    fontSize: responsiveFontSize(15),
-    color: "#333333",
-  },
-  gridButtonTextSelected: {
-    fontFamily: "Pretendard-SemiBold",
-    color: "#3366FF",
+  inputError: {
+    borderColor: "red",
   },
   errorText: {
     fontFamily: "Pretendard-Regular",

@@ -1,16 +1,28 @@
 import { useFonts } from "expo-font";
 import React, { useEffect, useState } from "react";
-import { Image, ScrollView, Text, TouchableOpacity, View, Alert, Linking } from "react-native";
+import { Image, ScrollView, Text, TouchableOpacity, View, Linking } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { TokenService } from "../../services/tokenService";
 import { logout, getMyInfo } from "../../services/userSettingsAPI";
+import CustomModal from "../common/CustomModal";
 
 export default function Setting() {
   const navigation = useNavigation();
   const [userName, setUserName] = useState("김민지");
   const [userMajor, setUserMajor] = useState("컴퓨터공학부 25학번");
   const [userEmail, setUserEmail] = useState("1234abcd@inu.ac.kr");
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalConfig, setModalConfig] = useState({
+    title: "",
+    message: "",
+    type: "info" as "success" | "error" | "info" | "warning",
+  });
+
+  const showModal = (title: string, message: string, type: "success" | "error" | "info" | "warning" = "info") => {
+    setModalConfig({ title, message, type });
+    setModalVisible(true);
+  };
 
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
@@ -19,6 +31,7 @@ export default function Setting() {
     "Pretendard-Light": require("../../assets/fonts/Pretendard-Light.ttf"),
     "Pretendard-Regular": require("../../assets/fonts/Pretendard-Regular.ttf"),
   });
+  
 
   useEffect(() => {
     const loadUserInfo = async () => {
@@ -123,7 +136,7 @@ export default function Setting() {
 
     // 앱 버전
     if (subItem === "2. 앱 버전") {
-      Alert.alert("앱 버전", "버전 1.00");
+      showModal("앱 버전", "버전 1.00", "info");
       return;
     }
 
@@ -152,7 +165,7 @@ export default function Setting() {
     }
 
     // 나머지는 개발 중
-    Alert.alert("안내", `${subItem}\n\n현재 개발 중인 기능입니다.`);
+    showModal("안내", `${subItem}\n\n현재 개발 중인 기능입니다.`, "info");
   };
 
   if (!fontsLoaded) return null;
@@ -318,6 +331,14 @@ export default function Setting() {
           </View>
         ))}
       </View>
+
+      <CustomModal
+        visible={modalVisible}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        onConfirm={() => setModalVisible(false)}
+      />
     </ScrollView>
   );
 }

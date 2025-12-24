@@ -4,7 +4,6 @@ import { useFonts } from "expo-font";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Dimensions,
   Image,
   Modal,
@@ -16,6 +15,7 @@ import {
 import { registerUserToBackend, signUpWithEmail } from "../../services/authAPI";
 import { TokenService } from "../../services/tokenService";
 import { useSignup } from "../../context/SignupContext";
+import CustomModal from "../common/CustomModal";
 
 type RootStackParamList = {
   Login: undefined;
@@ -47,6 +47,13 @@ export default function EnterPw() {
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorModalConfig, setErrorModalConfig] = useState({ title: "", message: "" });
+
+  const showErrorModal = (title: string, message: string) => {
+    setErrorModalConfig({ title, message });
+    setErrorModalVisible(true);
+  };
 
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
@@ -116,7 +123,7 @@ export default function EnterPw() {
       const firebaseResult = await signUpWithEmail(email, password, name);
 
       if (!firebaseResult.success) {
-        Alert.alert("회원가입 실패", firebaseResult.message || "회원가입에 실패했습니다.");
+        showErrorModal("회원가입 실패", firebaseResult.message || "회원가입에 실패했습니다.");
         setIsLoading(false);
         return;
       }
@@ -158,7 +165,7 @@ export default function EnterPw() {
       setShowSuccessModal(true);
     } catch (error) {
       console.error("회원가입 오류:", error);
-      Alert.alert("오류", "회원가입 중 오류가 발생했습니다.");
+      showErrorModal("오류", "회원가입 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -407,6 +414,14 @@ export default function EnterPw() {
           </View>
         </View>
       </Modal>
+
+      <CustomModal
+        visible={errorModalVisible}
+        title={errorModalConfig.title}
+        message={errorModalConfig.message}
+        type="error"
+        onConfirm={() => setErrorModalVisible(false)}
+      />
     </View>
   );
 }

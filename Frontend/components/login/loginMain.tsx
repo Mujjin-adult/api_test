@@ -4,7 +4,6 @@ import { useFonts } from "expo-font";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Dimensions,
   Image,
   Platform,
@@ -16,8 +15,10 @@ import {
   View
 } from "react-native";
 import { getToken, messaging } from "../../config/firebaseConfig";
-import { signInWithEmail, loginToBackend } from "../../services/authAPI";
+import { signInWithEmail } from "../../services/authAPI";
+import { loginWithEmail } from "../../services/userSettingsAPI";
 import { TokenService } from "../../services/tokenService";
+import CustomModal from "../common/CustomModal";
 
 type RootStackParamList = {
   Login: undefined;
@@ -51,6 +52,17 @@ export default function LoginMain() {
   const [isLoading, setIsLoading] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalConfig, setModalConfig] = useState({
+    title: "",
+    message: "",
+    type: "info" as "success" | "error" | "info" | "warning",
+  });
+
+  const showModal = (title: string, message: string, type: "success" | "error" | "info" | "warning") => {
+    setModalConfig({ title, message, type });
+    setModalVisible(true);
+  };
 
   const [fontsLoaded] = useFonts({
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
@@ -75,16 +87,18 @@ export default function LoginMain() {
         return token;
       } else {
         console.log("FCM 토큰을 가져올 수 없습니다. 알림 권한을 확인하세요.");
-        Alert.alert(
+        showModal(
           "알림 권한 필요",
-          "푸시 알림을 받으려면 브라우저에서 알림 권한을 허용해주세요."
+          "푸시 알림을 받으려면 브라우저에서 알림 권한을 허용해주세요.",
+          "warning"
         );
       }
     } catch (error) {
       console.error("FCM 토큰 가져오기 실패:", error);
-      Alert.alert(
+      showModal(
         "오류",
-        `FCM 토큰을 가져오는 중 오류가 발생했습니다: ${error}`
+        `FCM 토큰을 가져오는 중 오류가 발생했습니다.`,
+        "error"
       );
     }
   };
@@ -118,40 +132,27 @@ export default function LoginMain() {
     setIsLoading(true);
 
     try {
-      const firebaseResult = await signInWithEmail(email, password);
+      // 1. 백엔드 이메일/비밀번호 로그인
+      const backendResult = await loginWithEmail(email, password, fcmToken || undefined);
 
-      if (!firebaseResult.success) {
-        Alert.alert("로그인 실패", firebaseResult.message);
-        setIsLoading(false);
-        return;
-      }
-
-      console.log("Firebase 로그인 성공:", firebaseResult.user);
-
-      try {
-        const backendResult = await loginToBackend(fcmToken || undefined);
-
-        if (backendResult.success && backendResult.data) {
-          if (backendResult.data.idToken) {
-            await TokenService.saveToken(backendResult.data.idToken);
-            console.log("Backend 토큰 저장 완료");
-          }
-          if (backendResult.data.user) {
-            await TokenService.saveUserInfo(backendResult.data.user);
-            console.log("사용자 정보 저장 완료:", backendResult.data.user);
-          }
-        } else {
-          console.warn("Backend 로그인 실패 (Firebase 인증으로 계속):", backendResult.message);
+      if (backendResult.success && backendResult.data) {
+        // 토큰 저장
+        if (backendResult.data.idToken) {
+          await TokenService.saveToken(backendResult.data.idToken);
+          console.log("Backend 토큰 저장 완료");
         }
-      } catch (backendError: any) {
-        console.warn("Backend 로그인 오류 (Firebase 인증으로 계속):", backendError.message);
+        // 사용자 정보 저장
+        if (backendResult.data.user) {
+          await TokenService.saveUserInfo(backendResult.data.user);
+          console.log("사용자 정보 저장 완료:", backendResult.data.user);
+        }
+        navigation.navigate("Home");
+      } else {
+        showModal("로그인 실패", "이메일 또는 비밀번호가 올바르지 않습니다.", "error");
       }
-
-      console.log("FCM 토큰:", fcmToken);
-      navigation.navigate("Home");
-    } catch (error) {
+    } catch (error: any) {
       console.error("로그인 오류:", error);
-      Alert.alert("오류", "로그인 중 오류가 발생했습니다.");
+      showModal("로그인 실패", "이메일 또는 비밀번호가 올바르지 않습니다.", "error");
     } finally {
       setIsLoading(false);
     }
@@ -244,6 +245,14 @@ export default function LoginMain() {
           <Text style={styles.footerCopyright}>ⓒ DAON</Text>
         </View>
       </View>
+
+      <CustomModal
+        visible={modalVisible}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        onConfirm={() => setModalVisible(false)}
+      />
     </ScrollView>
   );
 }
